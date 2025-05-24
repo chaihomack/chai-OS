@@ -1,0 +1,33 @@
+{
+    "files.associations": {
+        "stdint.h": "c",
+        "commands.h": "c",
+        "stddef.h": "c",
+        "atomic": "c",
+        "cstddef": "c",
+        "cwchar": "c",
+        "string": "c",
+        "string_view": "c",
+        "iosfwd": "c",
+        "limits": "c",
+        "ostream": "c",
+        "streambuf": "c",
+        "type_traits": "c",
+        "cstdio": "c",
+        "array": "c",
+        "bit": "c",
+        "concepts": "c",
+        "deque": "c",
+        "vector": "c",
+        "functional": "c",
+        "memory": "c",
+        "memory_resource": "c",
+        "tuple": "c",
+        "random": "c",
+        "initializer_list": "c",
+        "new": "c",
+        "stdexcept": "c",
+        "system_error": "c",
+        "typeinfo": "c"
+    }
+}
