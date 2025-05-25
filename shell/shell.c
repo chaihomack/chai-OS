@@ -1,5 +1,6 @@
 
 #include "shell.h"
+#include "../drivers/keyboard/keyboard_driver.h"
 
 void start_shell()
 {
@@ -13,7 +14,7 @@ void start_shell()
     {
         kprint_newline();
         char command[size_of_command];
-        kprint(prompt);
+        kprint_str(prompt);
         
         kscanf(command, &size_of_command);
         kprint_newline();

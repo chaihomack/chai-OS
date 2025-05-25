@@ -1,23 +1,69 @@
 
 #include "my_stdlib.h"
 
-
+#include "../drivers/keyboard/keyboard_driver.h"
 
 extern char *vidptr;
 extern struct Cursor cursor;
 
-void kprint(const char *str)
+void kprint_char(const unsigned char character)
+{
+    vidptr[cursor.loc++] = character;
+    vidptr[cursor.loc++] = 0x07;
+}
+
+void kprint_str(const char *str)
 {
 	unsigned int i = 0;
 	while (str[i] != '\0') {
-		vidptr[cursor.loc++] = str[i++];
-		vidptr[cursor.loc++] = 0x07;
+        kprint_char(str[i++]);
 	}
 	refresh_cursor();
 }
 
-void kprint(const int)
+int ipow(int base, int exponent) {
+    int result = 1;
+
+    if (exponent < 0) {
+        return 0;
+    }
+
+    while (exponent > 0) {
+        if (exponent % 2 == 1) {
+            result *= base;
+        }
+        base *= base;
+        exponent /= 2;
+    }
+
+    return result;
+}
+
+void kprint_int(const int num)
 {
+    int cpy_of_num = num, size_of_num = 0;
+
+    if(num < 0)
+    {
+        kprint_char('-');
+        cpy_of_num *= -1;        
+    }
+
+    unsigned char nums[10] = {"0123456789"};
+
+    int tmp = cpy_of_num;
+    while(tmp != 0)
+    {
+        tmp /= 10;
+        size_of_num++;
+    }
+    
+    
+    for (int i = size_of_num; i > 0; --i)
+    {
+        int number = (cpy_of_num / ipow(10, i - 1))%10;
+        kprint_char(nums[number]);
+    }
     
 }
 

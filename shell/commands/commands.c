@@ -1,6 +1,6 @@
 #include "commands.h"
-
-#include "string.h"
+#include "../../mylibs/my_stdlib.h"
+#include "../../drivers/keyboard/keyboard_driver.h"
 
 #define MAX_ARGS 10
 #define MAX_ARG_LEN 64
@@ -39,7 +39,7 @@ void call_command(const char* input) {
         }
     }
 
-    kprint("Unknown command");
+    kprint_str("Unknown command");
 }
 
 void do_command(const char* input_command)

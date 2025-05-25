@@ -7,9 +7,11 @@ typedef unsigned int    DWORD;
 #define NULL ((void*)0)
 #endif
 
-#include "../drivers/keyboard/keyboard_driver.h"
+void kprint_char(const unsigned char character);
+void kprint_str(const char *str);
+void kprint_int(const int num);
+int ipow(int base, int exponent); //will be in mathlib later
 
-void kprint(const char *str);
 void kprint_newline();
 char kgetc();
 void kscanf (char* str, const unsigned int* buffer_size);

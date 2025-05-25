@@ -69,8 +69,6 @@ BYTE ATA_disk_status()
 
 BYTE ATA_disk_initialize()
 {
-	kprint("disk init");
-
 	outb(0x3F6, 0x04);  
     outb(0x3F6, 0x00);                  //resetting
     while (inb(STATUS) & BSY);          // waiting for BSY=0
@@ -89,8 +87,6 @@ BYTE ATA_disk_initialize()
 
 int ATA_disk_read(BYTE *buff, DWORD sector, DWORD count) 
 {
-    kprint("reading");
-
     outb(DRIVE, 0xE0 | ((sector >> 24) & 0x0F)); // master and LBA
     
     outb(SECTOR_COUNT, count); 
@@ -118,10 +114,8 @@ int ATA_disk_read(BYTE *buff, DWORD sector, DWORD count)
     return 0; 
 }
 
-int ATA_disk_write(const BYTE *buff, DWORD sector, DWORD count) {
-    
-    kprint("writing");
-    
+int ATA_disk_write(const BYTE *buff, DWORD sector, DWORD count) 
+{    
     if (!buff || count == 0) return -1;
 
     outb(DRIVE, 0xE0 | ((sector >> 24) & 0x0F));  // LBA + Master
@@ -145,9 +139,8 @@ int ATA_disk_write(const BYTE *buff, DWORD sector, DWORD count) {
     return 0;
 }
 
-int ATA_disk_flush() {
-
-    
+int ATA_disk_flush() 
+{    
     outb(DRIVE, 0xE0 | 0xA0);  // LBA + Master
     
     outb(COMMAND, 0xE7);  // flush command
