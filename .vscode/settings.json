@@ -28,6 +28,7 @@
         "new": "c",
         "stdexcept": "c",
         "system_error": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "compare": "c"
     }
 }

@@ -2,6 +2,7 @@
 #include "mylibs/my_stdlib.h"
 #include "shell/shell.h"
 #include "drivers/keyboard/keyboard_driver.h"
+#include "drivers/disk_driver/disk_driver.h"
 
 void kmain() 
 {
@@ -9,6 +10,8 @@ void kmain()
   kb_init();
 
   clear_screen();
-  kprint_int(1237881);
+  
+  ATA_disk_init();
+  kprint_int(ATA_get_sector_count());
   
 }

@@ -67,7 +67,7 @@ BYTE ATA_disk_status()
 	return inb(STATUS);
 }
 
-BYTE ATA_disk_initialize()
+BYTE ATA_disk_init()
 {
 	outb(0x3F6, 0x04);  
     outb(0x3F6, 0x00);                  //resetting
@@ -163,7 +163,7 @@ int ATA_disk_flush()
     return -2;  // timeout
 } //idk
 
-WORD get_word_from_DISK_IDENTIFY(unsigned int word_number)
+WORD ATA_get_word_from_DISK_IDENTIFY(unsigned int word_number)
 {
     outb(COMMAND, IDENTIFY_COMMAND);
     
@@ -179,10 +179,10 @@ WORD get_word_from_DISK_IDENTIFY(unsigned int word_number)
     return buffer[word_number];
 }
 
-unsigned int get_sector_count()
+unsigned int ATA_get_sector_count()
 {
-    WORD lo = get_word_from_DISK_IDENTIFY(60);
-    WORD hi = get_word_from_DISK_IDENTIFY(61);
+    WORD lo = ATA_get_word_from_DISK_IDENTIFY(60);
+    WORD hi = ATA_get_word_from_DISK_IDENTIFY(61);
 
     return ((unsigned int)hi << 16) | lo;
 }

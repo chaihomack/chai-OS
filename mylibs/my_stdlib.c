@@ -106,13 +106,12 @@ void kscanf (char* str, const unsigned int* buffer_size)
 char* strchr(const char* str, int ch) {
     while(*str != '\0') {
         if(*str == (char)ch) {
-            return (char*)str;  // Знайшли символ - повертаємо вказівник
+            return (char*)str;  
         }
         str++;
     }
-    // Якщо символ не знайдено і це нуль-символ
     if((char)ch == '\0') {
         return (char*)str;
     }
-    return NULL;  // Символ не знайдено
+    return NULL;
 }
