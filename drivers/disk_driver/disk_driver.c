@@ -1,7 +1,7 @@
 
 #include "disk_driver.h"
 #include "../../mylibs/my_stdlib.h"
-
+#include "stdint.h"
 
 #define DATA            0x1F0
 #define SECTOR_COUNT    0x1F2
@@ -130,7 +130,7 @@ int ATA_disk_write(const BYTE *buff, DWORD sector, DWORD count)
     while ((inb(STATUS) & (BSY | DRQ)) != DRQ); // waiting for BSY = 0 and DRQ = 1
 
     for (int i = 0; i < 256 * count; i++) {
-        outw(DATA, *((unsigned short int*)buff));   // writing
+        outw(DATA, *((uint16_t*)buff));   // writing
         buff += 2;
     }
 
