@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 typedef unsigned char   BYTE;
+typedef unsigned char   uchar;
 typedef unsigned short  WORD;
 typedef unsigned int    DWORD;
 #ifndef NULL
