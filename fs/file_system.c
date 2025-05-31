@@ -2,28 +2,51 @@
 #include "file_system.h"
 #include "string.h"
 #include "../mylibs/my_stdlib.h"
+#include <stdbool.h>
 
 int mkfs()
 {
     disk_params.sector_count = get_sector_count();
     disk_params.cluster_count = disk_params.sector_count/8;
     
-    fs_params.table_size = 2 + disk_params.cluster_count/512; //the table_size is aligned by sector //1 reserved sector  cuz first 16B in 2st sector
-    fs_params.data_zone_start = 1 + (fs_params.table_size + 1)/8; //the start of data aligned by cluster, after table
+    //the table_size is aligned by sector
+    fs_params.table_size = disk_params.cluster_count/4096; 
 
-    BYTE fs_info_on_disk[16] = {0xC4, 0xA1, 0xC4, 0xA1, 0xC4, 0xA1, 0xC4, 0xA1,     //8B magic
-    1,                                                      //record count (1 for first 16 bits)
-    fs_params.data_zone_start};                                                     //4B for minimum available address
+    //the start of data aligned by cluster, after table
+    fs_params.data_zone_start = 1 + (fs_params.table_size + 1)/8; 
 
-    disk_write(fs_info_on_disk, 1, 1);
+    //8B magic
+    BYTE fs_info_on_disk[8] = {0xC4, 0xA1, 0xC4, 0xA1, 0xC4, 0xA1, 0xC4, 0xA1};     
+
+    //will be fixed when I make a bootloader
+    disk_write(fs_info_on_disk, 0, 1);
+
+    //8 for reserved cluster
+    for (int i = 1; i < fs_params.table_size+8; i++) 
+    {
+        BYTE zeros[512] = {0};      //clearing the table
+        disk_write(zeros, i, 1);
+    }
+    
+    //<= cuz root dir
+    for (uint32_t i = 0; i <= fs_params.data_zone_start; i++) 
+    {
+        set_cluser_status(i, 1);
+    }
+    
+    fs_params.is_initialized = true;
+    return 0; //success
 }
 
 int detect_fs()
 {
     BYTE buffer[512];
-    disk_read(buffer, 1, 1);        //magic number is on 2 sector 
     
-    if (*((uint64_t*)buffer) == 0xC4A1C4A1C4A1C4A1)  //first 8 bytes of magic
+    //magic number is on sector 0 //will be fixed when I make a bootloader!!!
+    disk_read(buffer, 0, 1);        
+    
+    //first 8 bytes of magic
+    if (*((uint64_t*)buffer) == 0xC4A1C4A1C4A1C4A1)  
     {
         return 0; //success
     }
@@ -31,64 +54,60 @@ int detect_fs()
     return 1; //no fs
 }
 
-int split_into_name_and_extension(uchar *name_with_extension, uchar* name, uchar* extension)
+int is_bit_set(BYTE byte, int bit) {
+    return (byte & (1 << bit)) ? 1 : 0;
+}
+
+BYTE toggle_bit(BYTE byte, int bit) {
+    return byte ^ (1 << bit);
+}
+
+int set_cluster_status(uint32_t cluster_index, bool value)
 {
-    if(strlen(name_with_extension) > 12){ //8 chars of name + dot + 3 for extension maximum
-        return 1;
-    }
-    
-    size_t i;
-    for (i = 0; i < 8; ++i) // 8 chars
-    {
-        if (name_with_extension[i] == '.' || name_with_extension[i] == '\0')
-        {
-            break;
-        }
-        
-        name[i] = name_with_extension[i];
+    if(cluster_index > disk_params.cluster_count || 
+        (cluster_index <= fs_params.data_zone_start 
+            && fs_params.is_initialized == true)){ 
+                return 1; //error
     }
 
-    if(name_with_extension[i] != '.'){
-        return 0;
-    }
+    uint32_t byte_index = cluster_index / 8;
+    uint8_t bit_index = cluster_index % 8;
+    uint32_t sector_index = byte_index / 512; //32 bits will be fine :3
     
-    i++; //index after a dot
-    for (size_t j = 0; j < 3; ++j, ++i)
-    {
-        if(name_with_extension[i] == '\0'){
-            return 0;
-        }
-        extension[j] = name_with_extension[i];      //3 chars after dot
+    BYTE buffer[512];
+
+    disk_read(buffer, sector_index, 1);
+
+    //everything should be predictable
+    if(is_bit_set(buffer[byte_index], bit_index) == value){     
+        return 1; //error
     }
-    
+
+    buffer[byte_index] = toggle_bit(buffer[byte_index], bit_index); 
+
+    disk_write(buffer, sector_index, 1);
+
     return 0;
 }
 
-int make_file(uchar* name_with_extension, uint32_t file_size_in_KiB)
+uint32_t get_free_cluster()
 {
-    uchar name [8] = {' '};
-    uchar extension [3] = {' '};          //setting empty fields for correct split_into_name_and_extension 
-
-    if (split_into_name_and_extension(name_with_extension, name, extension)){
-        return 1;
-    }
-
-    file_allocation_table_record record =
+    for (uint32_t i = 1; i < fs_params.table_size; i++)
     {
-        .r_name = name,
-        .r_extension = extension,
-        .r_size = 1 + (file_size_in_KiB / 4),
-        .r_adress = fs_params.minimum_available_adress
-    };
+        BYTE buffer [512];
+        disk_read(buffer, i, 1);
 
-
-    file_allocation_table_record buffer[32];        //32 * 16 = 512         //1 record = 16 bytes
-
-    uint32_t which_sector_to_change = fs_params.data_zone_start + (fs_params.record_count / 32);    //32 records per sector
-    disk_read(buffer, which_sector_to_change, 1);
-
-    buffer[fs_params.record_count % 32] = record;
-
-    disk_write(buffer, which_sector_to_change, 1);
+        for (uint32_t B = 0; B < 512; B++)
+        {
+            for (uint32_t b = 0; b < 8; b++)
+            {
+                if(is_bit_set(buffer[B], b) == 0){
+                    return B*8 + b;
+                }
+            }
+                
+        }
+        
+    }    
+    return 1; //error
 }
-

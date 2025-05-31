@@ -1,14 +1,7 @@
 #pragma once
 #include "../mylibs/my_stdlib.h"
 #include "stdint.h"
-
-typedef struct __attribute__((__packed__))      //no aligtment for bytes
-{
-    unsigned char r_name[8];                      // 8 characters for name
-    unsigned char r_extension[3];            // 3 characters for fileextension 
-    uint8_t r_size;                               // 1 byte for size (255 clusters max - 1020 KiB)
-    uint32_t r_adress;                            // 4 bytes for adressing(in clusters 268,435,456 clusters (16 TB) maximum)    
-}file_allocation_table_record;
+#include <stdbool.h>
 
 typedef struct 
 {
@@ -21,11 +14,12 @@ typedef struct
 {   
     uint32_t table_size;            //the table_size is aligned by sector
     uint32_t data_zone_start;       //start of data aligned by cluster, after table
-    uint32_t record_count;           //4 Bytes after magic in 2 sector
-    uint32_t minimum_available_adress;
+    bool is_initialized;
 }FS_params;
 
-FS_params fs_params;
+FS_params fs_params = {.is_initialized = 0};
 
 int mkfs();
 int detect_fs();
+
+uint32_t get_free_cluster();
