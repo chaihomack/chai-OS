@@ -49,7 +49,9 @@ void kprint_int(const int num)
         cpy_of_num *= -1;        
     }
 
-    unsigned char nums[10] = {"0123456789"};
+    uchar nums[10] = {"0123456789"};
+
+    if(num == 0) {kprint_char('0'); return; }        //костылирование ;)
 
     int tmp = cpy_of_num;
     while(tmp != 0)
@@ -103,7 +105,7 @@ void kscanf (char* str, const unsigned int* buffer_size)
     
 }
 
-char* strchr(const char* str, int ch) {
+char* kstrchr(const char* str, int ch) {
     while(*str != '\0') {
         if(*str == (char)ch) {
             return (char*)str;  
@@ -114,4 +116,19 @@ char* strchr(const char* str, int ch) {
         return (char*)str;
     }
     return NULL;
+}
+
+int kstrcmp(const char* s1, const char* s2) {
+    while (*s1 && (*s1 == *s2)) {       s1++;
+        s2++;
+    }
+    return *(unsigned char*)s1 - *(unsigned char*)s2;
+}
+
+int is_bit_set(BYTE byte, int bit) {
+    return (byte & (1 << bit)) ? 1 : 0;
+}
+
+BYTE toggle_bit(BYTE byte, int bit) {
+    return byte ^ (1 << bit);
 }

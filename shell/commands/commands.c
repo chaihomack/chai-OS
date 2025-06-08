@@ -1,6 +1,7 @@
 #include "commands.h"
+
 #include "../../mylibs/my_stdlib.h"
-#include "../../drivers/keyboard/keyboard_driver.h"
+#include "../../fs/file_system.h"
 
 #define MAX_ARGS 10
 #define MAX_ARG_LEN 64
@@ -22,18 +23,23 @@ struct command_list {
 
 void clear();
 void help();
+void detect_fs_cmd();
+void mkfs_cmd();
+
 int parse_args(const char* input, char args[MAX_ARGS][MAX_ARG_LEN]);   //forward declaration
-int strcmp(const char* s1, const char* s2); 
 
 struct command_list commands[] = {
     { "help", help },
     { "clear", clear },
+    { "detectfs", detect_fs_cmd },
+    { "mkfscmd", mkfs_cmd },
+    { "fsinit", fs_init_cmd },
     { NULL, NULL }  
 };
 
 void call_command(const char* input) {
     for (int i = 0; commands[i].name != NULL; i++) {
-        if (strcmp(input, commands[i].name) == 0) {
+        if (kstrcmp(input, commands[i].name) == 0) {
             commands[i].func();
             return;
         }
@@ -53,8 +59,8 @@ void do_command(const char* input_command)
 
 
 int parse_args(const char* input_command, char args[MAX_ARGS][MAX_ARG_LEN]) {
-    int arg_i = 0;     // whitch argument rn
-    int char_i = 0;    // position in argument
+    int arg_i = 0;     // which argument rn
+    int char_i = 0;    // position iconnect_to_fs argument
 
     for (int i = 0; ; ++i) {
         char c = input_command[i];
@@ -98,9 +104,26 @@ void help()
 
 }
 
-int strcmp(const char* s1, const char* s2) {
-    while (*s1 && (*s1 == *s2)) {       s1++;
-        s2++;
+void detect_fs_cmd()        //tmp command, will be removed soon
+{
+    if (detect_fs())
+    {
+        kprint_str("no fs");
+        return;
     }
-    return *(unsigned char*)s1 - *(unsigned char*)s2;
+    kprint_str("fs is found");
 }
+
+void mkfs_cmd()             //tmp command, will be removed soon
+{
+    if(mkfs())
+    {
+        kprint_str("error while mkfs");
+    }
+    kprint_str("mkfs success");
+}
+
+void fs_init_cmd() //tmp command, will be removed soon
+{
+    fs_init();
+}        

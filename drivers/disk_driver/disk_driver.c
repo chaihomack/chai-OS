@@ -85,7 +85,7 @@ BYTE ATA_disk_init()
 	return 0;
 }
 
-int ATA_disk_read(BYTE *buff, DWORD sector, DWORD count) 
+int ATA_disk_read(BYTE *buff, uint32_t sector, uint32_t count) 
 {
     outb(DRIVE, 0xE0 | ((sector >> 24) & 0x0F)); // master and LBA
     
@@ -114,30 +114,39 @@ int ATA_disk_read(BYTE *buff, DWORD sector, DWORD count)
     return 0; 
 }
 
-int ATA_disk_write(const BYTE *buff, DWORD sector, DWORD count) 
-{    
+int ATA_disk_write(const BYTE *buff, uint32_t sector, uint32_t count) 
+{
     if (!buff || count == 0) return -1;
 
     outb(DRIVE, 0xE0 | ((sector >> 24) & 0x0F));  // LBA + Master
 
-    outb(SECTOR_COUNT, count);        // number of sectors
-    outb(LBA_LOW, sector);       // LBA Low
-    outb(LBA_MID, sector >> 8);  // LBA Mid
-    outb(LBA_HIGH, sector >> 16); // LBA High
+    outb(SECTOR_COUNT, count);
+    outb(LBA_LOW, sector);
+    outb(LBA_MID, sector >> 8);
+    outb(LBA_HIGH, sector >> 16);
 
-    outb(COMMAND, 0x30);  //write command
+    outb(COMMAND, 0x30);  // write command
 
-    while ((inb(STATUS) & (BSY | DRQ)) != DRQ); // waiting for BSY = 0 and DRQ = 1
+    // timeout
+    int timeout = 1000000;
+    while (((inb(STATUS) & (BSY | DRQ)) != DRQ) && --timeout);
+    if (timeout == 0) return -1;
 
-    for (int i = 0; i < 256 * count; i++) {
-        outw(DATA, *((uint16_t*)buff));   // writing
-        buff += 2;
+    const WORD *wbuff = (const WORD*) buff;
+    for (uint32_t i = 0; i < 256 * count; i++) {
+        outw(DATA, wbuff[i]);
     }
 
-    if(inb(STATUS) & ERR)
+    timeout = 1000000;
+    while ((inb(STATUS) & BSY) && --timeout);
+    if (timeout == 0) return -1;
+
+    if (inb(STATUS) & ERR)
         return -1;
+
     return 0;
 }
+
 
 int ATA_disk_flush() 
 {    
@@ -163,7 +172,7 @@ int ATA_disk_flush()
     return -2;  // timeout
 } //idk
 
-WORD ATA_get_word_from_DISK_IDENTIFY(unsigned int word_number)
+WORD ATA_get_word_from_DISK_IDENTIFY(uint32_t word_number)
 {
     outb(COMMAND, IDENTIFY_COMMAND);
     
