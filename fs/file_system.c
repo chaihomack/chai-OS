@@ -35,10 +35,11 @@ int fs_init()
 
 int mkfs()
 {
-    BYTE zeros[512] = {0};
-    for (int i = 1; i < fs_params.table_size+8; i++){ //8 for reserved cluster
-        disk_write(zeros, i, 1);    //clearing the table
+    for (int i = 1; i < fs_params.data_zone_start; i++)
+    {
+        clear_cluster(i);
     }
+    
 
     uint64_t magic = 0xC4A1C4A1C4A1C4A1;    //8B magic
     disk_write((BYTE*)&magic, 0, 1);  //will be fixed when I make a bootloader
@@ -52,18 +53,15 @@ int mkfs()
     {
         .name = {'r', 'o', 'o', 't'},       //not "root" cuz \0
         .extension = "dir",
-        .address = fs_params.data_zone_start,
-        .count_of_existing_dirs = 0,
+        .adress_of_chain = fs_params.data_zone_start + 1,          //just after table, cuz its first files, its predictable
+        .adress_of_available_record = 1,
         .additional_data_for_future = {0}
     };
 
-    BYTE buff[512] = {0}; 
-    for (size_t i = 0; i < 8; i++)
-    {
-        disk_write(buff, (root.address*8) + i, 1);  //clearing everything in root dir
-    } 
-    
-    memcpy(buff, &root, sizeof(record));        //firs 256 bytes its about this dir
+    clear_cluster(fs_params.data_zone_start);   //clearing everything in root dir 
+
+    BYTE buff [512] = {0};
+    memcpy(buff, &root, sizeof(record));        //first 256 bytes its about this dir
     
     disk_write(buff, fs_params.data_zone_start*8, 1);
     fs_params.is_initialized = true;
@@ -89,17 +87,33 @@ int detect_fs()
 
 int mkfile(const uchar* name_plus_ext)
 {
-    uint32_t start_cluster = get_free_cluster;
-    
-    BYTE *buffer [512];
+    BYTE buffer [512];
     disk_read(buffer, working_dir.address*8, 1);
-            
+    record this_dir_info;
+    memcpy(&this_dir_info, buffer, sizeof(record));
+
+    uint32_t index_of_cluster_for_file = (this_dir_info.adress_of_available_record + 1)/16;      //+1 cuz its index
+    uint8_t index_of_record_in_cluster = (this_dir_info.adress_of_available_record+1)%16;
+    uint8_t index_of_sector_with_record = (index_of_record_in_cluster+1)/2;
 
     record rec = {0};
     set_record_name_plus_ext(&rec, name_plus_ext);
 
+    uint32_t free_cluster = get_free_cluster();
+    rec.adress_of_chain = free_cluster;
+    set_cluster_status(free_cluster, 1);
 
+    uint32_t start_cluster = get_free_cluster();
+
+    
 }
+
+int mkdir (record *rec, uint32_t adress_of_chai_start)
+{
+    set_record_in_cluster(rec, adress_of_chai_start, 0, 0);
+    
+}
+
 
 int clear_cluster(uint32_t* address_of_cluster)
 {
@@ -188,4 +202,47 @@ void set_record_name_plus_ext(record *rec, const uchar *name_plus_ext) {
             ext_len = sizeof rec->extension;
         memcpy(rec->extension, ext, ext_len);
     }
+}
+
+void set_record_in_cluster(record *rec, uint32_t index_of_cluster_for_file, uint8_t index_of_sector_with_record, uint8_t index_of_record_in_cluster)
+{
+    BYTE sec_with_record [512];
+    if((index_of_record_in_cluster+1)%2 == 1)
+    {        
+        memcpy(sec_with_record, rec, sizeof(record));          //first 256 bytes of sector
+    }else{      // ...%2 == 0
+        memcpy(sec_with_record + 256, rec, sizeof(record));    //second 256 bytes of sector
+    }
+
+    if(index_of_cluster_for_file == 0)
+    {
+        disk_write(sec_with_record, index_of_cluster_for_file*CLUSTER_SIZE + index_of_sector_with_record, 1);
+    }           
+}
+
+uint32_t get_adress_of_cluster_in_chain(uint32_t cluster_with_chain, uint16_t index_of_adress)
+{
+    uint16_t index_of_sector = index_of_adress/128;
+    uint16_t index_of_adress_in_sector = index_of_adress%128;
+
+    uint32_t buffer [128];
+
+    disk_read(buffer, cluster_with_chain + index_of_sector, 1);
+
+    return buffer[index_of_adress_in_sector];
+
+}
+
+void set_adress_of_cluster_in_chain(uint32_t cluster_with_chain, uint16_t index_of_adress, uint32_t value)
+{
+    uint16_t index_of_sector = index_of_adress/128;
+    uint16_t index_of_adress_in_sector = index_of_adress%128;
+
+    uint32_t buffer [128];
+
+    disk_read(buffer, cluster_with_chain + index_of_sector, 1);
+
+    buffer [index_of_adress_in_sector] = value;
+    
+    disk_write(buffer, cluster_with_chain+index_of_sector, 1);
 }
