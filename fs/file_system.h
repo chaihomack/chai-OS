@@ -7,5 +7,5 @@ int fs_init();
 
 int mkfs();
 int detect_fs();
-
+int mkfile(const uchar* name_plus_ext);
 
