@@ -2,6 +2,7 @@
 
 #include "../../mylibs/my_stdlib.h"
 #include "../../fs/file_system.h"
+#include "../shell.h"
 
 #define MAX_ARGS 10
 #define MAX_ARG_LEN 64
@@ -23,17 +24,14 @@ struct command_list {
 
 void clear();
 void help();
-void detect_fs_cmd();
-void mkfs_cmd();
+void go_fs();
 
 int parse_args(const char* input, char args[MAX_ARGS][MAX_ARG_LEN]);   //forward declaration
 
 struct command_list commands[] = {
     { "help", help },
     { "clear", clear },
-    { "detectfs", detect_fs_cmd },
-    { "mkfscmd", mkfs_cmd },
-    { "fsinit", fs_init_cmd },
+    { "gofs", go_fs },
     { NULL, NULL }  
 };
 
@@ -104,26 +102,22 @@ void help()
 
 }
 
-void detect_fs_cmd()        //tmp command, will be removed soon
+void go_fs()        //tmp command, will be removed soon
 {
     if (detect_fs())
     {
         kprint_str("no fs");
-        return;
-    }
-    kprint_str("fs is found");
-}
+        if(mkfs())
+        {
+            kprint_str("error while mkfs");
+        }
+        kprint_str("mkfs success");
+    }else{
+        kprint_str("fs is found");
 
-void mkfs_cmd()             //tmp command, will be removed soon
-{
-    if(mkfs())
-    {
-        kprint_str("error while mkfs");
+        fs_init();
     }
-    kprint_str("mkfs success");
-}
+    
+    kprint_str(get_name_plus_ext(&working_dir.rec));              //prompt is defined in shell
 
-void fs_init_cmd() //tmp command, will be removed soon
-{
-    fs_init();
 }        

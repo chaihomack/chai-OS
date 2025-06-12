@@ -6,7 +6,9 @@
 typedef unsigned char   BYTE;
 typedef unsigned char   uchar;
 typedef unsigned short  WORD;
-typedef unsigned int    DWORD;
+typedef uint32_t    DWORD;
+typedef uint32_t    size_t;
+
 #ifndef NULL
 #define NULL ((void*)0)
 #endif
@@ -25,3 +27,8 @@ void kscanf (char* str, const unsigned int* buffer_size);
 
 int is_bit_set(BYTE byte, int bit);
 BYTE toggle_bit(BYTE byte, int bit);
+
+int strlen(const char *str);
+void *memcpy(void *dest, const void *src, unsigned int n);
+void *memset(void *s, int c, unsigned int n);
+char *strchr(const char *s, int c);

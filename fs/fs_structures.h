@@ -1,5 +1,7 @@
+#pragma once
+
 #include "stdint.h"
-#include "mylibs/my_stdlib.h"
+#include "../mylibs/my_stdlib.h"
 
 typedef struct 
 {
@@ -13,12 +15,6 @@ typedef struct
     bool is_initialized;
 }FS_params;
 
-typedef struct 
-{
-    uint32_t path[512];
-    uint32_t address;
-} Working_dir;
-
 typedef struct __attribute__((__packed__)) {
     BYTE   name[32];                    // without '\0'
     BYTE   extension[16];               // without '\0'
@@ -27,7 +23,12 @@ typedef struct __attribute__((__packed__)) {
     BYTE   additional_data_for_future[200];
 } record;
 
-typedef struct __attribute__((__packed__))
+typedef struct 
 {
+    uint32_t address;
+    record rec;
+} Working_dir;
+
+typedef struct __attribute__((__packed__)){
     uint32_t cluster_with_data [1024];
-}chain_with_more_data;
+} chain_with_more_data;
