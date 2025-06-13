@@ -104,20 +104,20 @@ void help()
 
 void go_fs()        //tmp command, will be removed soon
 {
+    fs_init();
+
     if (detect_fs())
     {
-        kprint_str("no fs");
         if(mkfs())
         {
             kprint_str("error while mkfs");
+            kgetc();
         }
         kprint_str("mkfs success");
     }else{
         kprint_str("fs is found");
 
-        fs_init();
     }
     
-    kprint_str(get_name_plus_ext(&working_dir.rec));              //prompt is defined in shell
-
+    add_dir_in_prompt(get_name_plus_ext(&working_dir.rec));
 }        

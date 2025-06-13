@@ -6,13 +6,13 @@
 extern char *vidptr;
 extern struct Cursor cursor;
 
-void kprint_char(const unsigned char character)
+void kprint_char(const uchar character)
 {
     vidptr[cursor.loc++] = character;
     vidptr[cursor.loc++] = 0x07;
 }
 
-void kprint_str(const char *str)
+void kprint_str(const uchar *str)
 {
 	unsigned int i = 0;
 	while (str[i] != '\0') {
@@ -39,7 +39,7 @@ int ipow(int base, int exponent) {
     return result;
 }
 
-void kprint_int(const int num)
+void kprint_int(const int32_t num)
 {
     int cpy_of_num = num, size_of_num = 0;
 
@@ -88,9 +88,9 @@ char kgetc()
     return *char_buffer;
 }
 
-void kscanf (char* str, const unsigned int* buffer_size)
+void kscanf (uchar* str, const uint32_t* buffer_size)
 {
-    char tmp_char;
+    uchar tmp_char;
     for (int i = 0; i < *buffer_size-1; i++)
     {
         tmp_char = kgetc();

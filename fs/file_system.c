@@ -44,35 +44,35 @@ int fs_init()
 
 int mkfs()
 {
-    for (uint32_t i = 1; i < fs_params.data_zone_start; i++)
-    {
+    for (uint32_t i = 0; i < fs_params.data_zone_start; i++) {
         clear_cluster(i);
     }
-    
+
     uint64_t magic = 0xC4A1C4A1C4A1C4A1;    //8B magic
-    disk_write((BYTE*)&magic, 0, 1);  //will be fixed when I make a bootloader
+    BYTE buffer[512] = {0};
+    memcpy(buffer, &magic, sizeof(magic));
+    disk_write(buffer, 0, 1);  //will be fixed when I make a bootloader
     
     for (uint32_t i = 0; i < fs_params.data_zone_start; i++){
         set_cluster_status(i, 1);
-    }
-
+    }   
+    
     //---------------------------------
     //making root dir
-    record root =
-    {
-        .name = {'r', 'o', 'o', 't'},       //not "root" cuz \0
-        .extension = {'d', 'i', 'r'},
-        .adress_of_chain = fs_params.data_zone_start + 1,          //just after table, cuz its first files, its predictable
-        .adress_of_available_record = 1,
-        .additional_data_for_future = {0}
-    };
+    
+    memcpy(working_dir.rec.name, "root", 4);       // witout \0
+    memcpy(working_dir.rec.extension, "dir", 3);   // without \0
+    working_dir.rec.adress_of_chain = fs_params.data_zone_start + 1;
+    working_dir.rec.adress_of_available_record = 1;
 
     clear_cluster(fs_params.data_zone_start);   //clearing everything in root dir 
+    clear_cluster(fs_params.data_zone_start + 1);    //clearing chain
 
-    BYTE buff [512] = {0};
-    memcpy(buff, &root, sizeof(record));        //first 256 bytes its about this dir
+    set_cluster_status(fs_params.data_zone_start, 1);
+    set_cluster_status(fs_params.data_zone_start + 1, 1);
+
+    set_record_in_cluster(&working_dir.rec, fs_params.data_zone_start, 0, 0);
     
-    set_record_in_cluster(&root, fs_params.data_zone_start, 0, 0);
     fs_params.is_initialized = true;
 
     return 0; //success
@@ -126,7 +126,6 @@ int mkdir (record *rec, uint32_t adress_of_chain_start)
     
 }
 
-
 int clear_cluster(uint32_t address_of_cluster)
 {
     BYTE zeros [512] = {0};
@@ -134,6 +133,7 @@ int clear_cluster(uint32_t address_of_cluster)
 
     for (int i = 0; i < CLUSTER_SIZE; i++)
     {
+        
         disk_write(zeros, start_sector + i, 1);
     }
 
