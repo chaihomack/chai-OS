@@ -105,20 +105,7 @@ void kscanf (uchar* str, const uint32_t* buffer_size)
     
 }
 
-char* kstrchr(const char* str, int ch) {
-    while(*str != '\0') {
-        if(*str == (char)ch) {
-            return (char*)str;  
-        }
-        str++;
-    }
-    if((char)ch == '\0') {
-        return (char*)str;
-    }
-    return NULL;
-}
-
-int kstrcmp(const char* s1, const char* s2) {
+int strcmp(const char* s1, const char* s2) {
     while (*s1 && (*s1 == *s2)) {       s1++;
         s2++;
     }

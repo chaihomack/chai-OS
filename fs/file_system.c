@@ -72,7 +72,7 @@ int mkfs()
     set_cluster_status(fs_params.data_zone_start + 1, 1);
 
     set_record_in_cluster(&working_dir.rec, fs_params.data_zone_start, 0, 0);
-    
+
     fs_params.is_initialized = true;
 
     return 0; //success
@@ -94,7 +94,7 @@ int detect_fs()
     return 1; //no fs
 }
 
-int mkfile(const uchar* name_plus_ext)
+int mkfile(const char* name_plus_ext)
 {
     BYTE buffer [512];
     disk_read(buffer, working_dir.address*8, 1);
@@ -115,8 +115,10 @@ int mkfile(const uchar* name_plus_ext)
     uint32_t start_cluster = get_free_cluster();
     set_adress_of_cluster_in_chain(rec.adress_of_chain, 0, start_cluster);
 
-    mkdir(&rec, start_cluster);
-
+    if (strcmp(get_extension(&working_dir.rec), "dir") == 0)
+    {
+        mkdir(&rec, start_cluster);
+    }
     return 0; //success
 }
 
@@ -124,6 +126,7 @@ int mkdir (record *rec, uint32_t adress_of_chain_start)
 {
     set_record_in_cluster(rec, adress_of_chain_start, 0, 0);
     
+    return 0;
 }
 
 int clear_cluster(uint32_t address_of_cluster)
@@ -262,7 +265,7 @@ void set_record_name_plus_ext(record *rec, const uchar *name_plus_ext) {
     }
 }
 
-uchar *get_name_plus_ext(record* rec)
+char *get_name_plus_ext(record* rec)
 {
     size_t name_len = 0;
 
@@ -299,4 +302,20 @@ uchar *get_name_plus_ext(record* rec)
     }
 
     return buffer;
+}
+
+char *get_extension(record *rec)
+{
+    static char extension[17]; //16 chars max and \0
+    
+    for (size_t i = 0; i < 17; i++)
+    {
+        if(rec->extension[i] == 0 || i == 17){
+            extension[i] = '\0';
+            break;
+        }
+        extension[i] = rec->extension[i];
+    }
+
+    return extension;
 }

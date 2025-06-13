@@ -16,11 +16,11 @@ typedef struct
 }FS_params;
 
 typedef struct __attribute__((__packed__)) {
-    uchar   name[32];                    // without '\0'
-    uchar extension[16];               // without '\0'
+    char   name[32];                    // without '\0'
+    char extension[16];               // without '\0'
     uint32_t adress_of_chain;
     uint32_t adress_of_available_record;    //for dirs
-    BYTE   additional_data_for_future[200];
+    BYTE additional_data_for_future[200];
 } record;
 
 typedef struct 

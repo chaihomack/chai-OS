@@ -23,13 +23,13 @@ struct command_list {
 };
 
 void clear();
-void help();
+void test();
 void go_fs();
 
 int parse_args(const char* input, char args[MAX_ARGS][MAX_ARG_LEN]);   //forward declaration
 
 struct command_list commands[] = {
-    { "help", help },
+    { "test", test },
     { "clear", clear },
     { "gofs", go_fs },
     { NULL, NULL }  
@@ -37,7 +37,7 @@ struct command_list commands[] = {
 
 void call_command(const char* input) {
     for (int i = 0; commands[i].name != NULL; i++) {
-        if (kstrcmp(input, commands[i].name) == 0) {
+        if (strcmp(input, commands[i].name) == 0) {
             commands[i].func();
             return;
         }
@@ -97,9 +97,9 @@ void clear()
     cursor.loc = 0;
 }
 
-void help()
+void test()
 {
-
+    kprint_str(get_extension(&working_dir.rec));
 }
 
 void go_fs()        //tmp command, will be removed soon

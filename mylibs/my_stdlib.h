@@ -17,8 +17,6 @@ void kprint_char(const uchar character);
 void kprint_str(const uchar *str);
 void kprint_int(const int32_t num);
 int ipow(int base, int exponent); //will be in mathlib later
-
-int kstrcmp(const char* s1, const char* s2);
 char* kstrchr(const char* str, int ch);
 
 void kprint_newline();
@@ -31,5 +29,6 @@ BYTE toggle_bit(BYTE byte, int bit);
 void *memcpy(void *dest, const void *src, unsigned int n);
 void *memset(void *s, int c, unsigned int n);
 
+int strcmp(const char* s1, const char* s2);
 int strlen(const char *str);
 char *strchr(const char *s, int c);
