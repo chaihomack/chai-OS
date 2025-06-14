@@ -23,15 +23,16 @@ struct command_list {
 };
 
 void clear();
-void test();
 void go_fs();
+void makefile();
 
 int parse_args(const char* input, char args[MAX_ARGS][MAX_ARG_LEN]);   //forward declaration
 
 struct command_list commands[] = {
-    { "test", test },
+    { "ls", ls },
     { "clear", clear },
     { "gofs", go_fs },
+    { "makefile", makefile },
     { NULL, NULL }  
 };
 
@@ -46,10 +47,10 @@ void call_command(const char* input) {
     kprint_str("Unknown command");
 }
 
+command cmd = {0}; //sorry
+
 void do_command(const char* input_command)
-{
-    command cmd;
-    
+{   
     parse_args(input_command, cmd.parameters);
 
     call_command(cmd.parameters[0]);             // call command using first parameter
@@ -97,11 +98,6 @@ void clear()
     cursor.loc = 0;
 }
 
-void test()
-{
-    kprint_str(get_extension(&working_dir.rec));
-}
-
 void go_fs()        //tmp command, will be removed soon
 {
     fs_init();
@@ -120,4 +116,9 @@ void go_fs()        //tmp command, will be removed soon
     }
     
     add_dir_in_prompt(get_name_plus_ext(&working_dir.rec));
-}        
+}
+
+void makefile()
+{
+    mkfile(cmd.parameters[1]);
+}

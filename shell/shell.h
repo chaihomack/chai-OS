@@ -9,4 +9,4 @@ typedef struct{
 }Prompt;
 
 void start_shell();
-void add_dir_in_prompt(uchar* dir_name);
+void add_dir_in_prompt(const uchar* dir_name);

@@ -12,14 +12,15 @@ Disk_params disk_params;
 FS_params fs_params = {.is_initialized = 0};
 Working_dir working_dir = {0};
 
-uint32_t set_cluster_status(uint32_t cluster_index, bool value);                    //forward dec
+int set_cluster_status(uint32_t cluster_index, const  bool value);                    //forward dec
 void set_record_name_plus_ext(record *rec, const uchar *name_plus_ext);
-int clear_cluster(uint32_t adress_of_cluster);
-void set_record_in_cluster(record *rec, uint32_t index_of_cluster_for_file, uint8_t index_of_sector_with_record, uint8_t index_of_record_in_cluster);
-uint32_t get_adress_of_cluster_in_chain(uint32_t cluster_with_chain, uint16_t index_of_adress);
-void set_adress_of_cluster_in_chain(uint32_t cluster_with_chain, uint16_t index_of_adress, uint32_t value);
+int clear_cluster(const uint32_t address_of_cluster);
+void set_record_by_index(const record *rec_in, const uint32_t address_of_chain, const uint8_t index);
+void get_record_by_index(record* rec_out, const uint32_t address_of_chain, const uint32_t index);
+uint32_t get_address_of_cluster_in_chain(const uint32_t address_of_chain, const uint16_t index_of_address);
+void set_address_of_cluster_in_chain(const uint32_t address_of_chain, const uint16_t index_of_address, const uint32_t value);
 uint32_t get_free_cluster();
-int mkdir (record *rec, uint32_t adress_of_chain_start);
+int mkdir (const record *rec, const uint32_t address_of_chain_start);
 
 int fs_init()
 {
@@ -29,7 +30,7 @@ int fs_init()
     disk_params.cluster_count = disk_params.sector_count/8;
 
     //the table_size is aligned by sector
-    fs_params.table_size = disk_params.cluster_count/4096; //4096 bits (clusters) per sector
+    fs_params.table_size = 1 + (disk_params.cluster_count/4096); //4096 bits (clusters) per sector
 
     //the start of data aligned by cluster, after table
     fs_params.data_zone_start = 1 + (fs_params.table_size + 1)/8; 
@@ -62,8 +63,8 @@ int mkfs()
     
     memcpy(working_dir.rec.name, "root", 4);       // witout \0
     memcpy(working_dir.rec.extension, "dir", 3);   // without \0
-    working_dir.rec.adress_of_chain = fs_params.data_zone_start + 1;
-    working_dir.rec.adress_of_available_record = 1;
+    working_dir.rec.address_of_chain = fs_params.data_zone_start + 1;
+    working_dir.rec.index_of_available_record = 1;
 
     clear_cluster(fs_params.data_zone_start);   //clearing everything in root dir 
     clear_cluster(fs_params.data_zone_start + 1);    //clearing chain
@@ -71,7 +72,8 @@ int mkfs()
     set_cluster_status(fs_params.data_zone_start, 1);
     set_cluster_status(fs_params.data_zone_start + 1, 1);
 
-    set_record_in_cluster(&working_dir.rec, fs_params.data_zone_start, 0, 0);
+    set_address_of_cluster_in_chain(working_dir.rec.address_of_chain, 0, fs_params.data_zone_start);
+    set_record_by_index(&working_dir.rec, working_dir.rec.address_of_chain, 0);
 
     fs_params.is_initialized = true;
 
@@ -96,24 +98,19 @@ int detect_fs()
 
 int mkfile(const char* name_plus_ext)
 {
-    BYTE buffer [512];
-    disk_read(buffer, working_dir.address*8, 1);
-    record this_dir_info;
-    memcpy(&this_dir_info, buffer, sizeof(record));
-
-    uint32_t index_of_cluster_for_file = (this_dir_info.adress_of_available_record + 1)/16;      //+1 cuz its index
-    uint8_t index_of_record_in_cluster = (this_dir_info.adress_of_available_record+1)%16;
-    uint8_t index_of_sector_with_record = (index_of_record_in_cluster+1)/2;
-
     record rec = {0};
     set_record_name_plus_ext(&rec, name_plus_ext);
 
     uint32_t free_cluster = get_free_cluster();
-    rec.adress_of_chain = free_cluster;
+    rec.address_of_chain = free_cluster;
     set_cluster_status(free_cluster, 1);
 
     uint32_t start_cluster = get_free_cluster();
-    set_adress_of_cluster_in_chain(rec.adress_of_chain, 0, start_cluster);
+    set_address_of_cluster_in_chain(rec.address_of_chain, 0, start_cluster);
+    set_cluster_status(start_cluster, 1);
+
+    set_record_by_index(&rec, working_dir.rec.address_of_chain, working_dir.rec.index_of_available_record);
+    working_dir.rec.index_of_available_record++;
 
     if (strcmp(get_extension(&working_dir.rec), "dir") == 0)
     {
@@ -122,10 +119,9 @@ int mkfile(const char* name_plus_ext)
     return 0; //success
 }
 
-int mkdir (record *rec, uint32_t adress_of_chain_start)
+int mkdir (const record *rec, const uint32_t adress_of_chain_start)
 {
-    set_record_in_cluster(rec, adress_of_chain_start, 0, 0);
-    
+    set_record_by_index(rec, adress_of_chain_start, 0);
     return 0;
 }
 
@@ -143,7 +139,7 @@ int clear_cluster(uint32_t address_of_cluster)
     return 0;
 }
 
-uint32_t set_cluster_status(uint32_t cluster_index, bool value)
+int set_cluster_status(const uint32_t cluster_index, const bool value)
 {
     if(cluster_index > disk_params.cluster_count || 
         (cluster_index <= fs_params.data_zone_start 
@@ -171,7 +167,7 @@ uint32_t set_cluster_status(uint32_t cluster_index, bool value)
     return 0;
 }
 
-uint32_t get_free_cluster()
+const uint32_t get_free_cluster()
 {
     uint32_t free_cluster = 1;
     for (uint32_t i = 1; i < fs_params.table_size; ++i)
@@ -196,49 +192,64 @@ uint32_t get_free_cluster()
 }
 //imlosingmyself
 
-void set_record_in_cluster(record *rec, uint32_t index_of_cluster_for_file, uint8_t index_of_sector_with_record, uint8_t index_of_record_in_cluster)
+void set_record_by_index(const record *rec_in, const uint32_t address_of_chain, const uint8_t index)
 {
+    uint32_t cluster_index = index/16;
+    uint8_t rec_index_in_cluster = index%16;
+    uint8_t sec_index = rec_index_in_cluster/2;
+
+    uint32_t cluster_address = get_address_of_cluster_in_chain(address_of_chain, cluster_index);
+
     BYTE sec_with_record [512];
-    if((index_of_record_in_cluster+1)%2 == 1)
-    {        
-        memcpy(sec_with_record, rec, sizeof(record));          //first 256 bytes of sector
-    }else{      // ...%2 == 0
-        memcpy(sec_with_record + 256, rec, sizeof(record));    //second 256 bytes of sector
-    }
+    disk_read(sec_with_record, (cluster_address*CLUSTER_SIZE) + sec_index, 1);
 
-    if(index_of_cluster_for_file == 0)
-    {
-        disk_write(sec_with_record, index_of_cluster_for_file*CLUSTER_SIZE + index_of_sector_with_record, 1);
-    }           
+    uint8_t rec_pos_in_sector = rec_index_in_cluster%2;
+    memcpy(sec_with_record + rec_pos_in_sector * sizeof(record), rec_in, sizeof(record));
+    
+    disk_write(sec_with_record, cluster_address + sec_index, 1);        
 }
 
-uint32_t get_adress_of_cluster_in_chain(uint32_t cluster_with_chain, uint16_t index_of_adress)
+void get_record_by_index(record* rec_out, const uint32_t address_of_chain, const uint32_t index)
 {
-    uint16_t index_of_sector = index_of_adress/128;
-    uint16_t index_of_adress_in_sector = index_of_adress%128;
+    uint32_t cluster_index = index/16; 
+    uint8_t rec_index_in_cluster = index%16;
+    uint8_t sec_index = rec_index_in_cluster/2;
+    
+    uint32_t cluster_address = get_address_of_cluster_in_chain(address_of_chain, cluster_index);
+
+    BYTE sec_with_record[512];
+    disk_read(sec_with_record, (cluster_address*CLUSTER_SIZE)+ sec_index,1);
+
+    uint8_t rec_pos_in_sector = rec_index_in_cluster%2;
+    memcpy (rec_out, sec_with_record + rec_pos_in_sector * sizeof(record), sizeof(record));
+}
+
+const uint32_t get_address_of_cluster_in_chain(const uint32_t address_of_chain, const uint16_t index)
+{
+    uint16_t index_of_sector = index/128;
+    uint16_t index_of_address_in_sector = index%128;
 
     uint32_t buffer [128];
 
-    disk_read((BYTE*)buffer, cluster_with_chain + index_of_sector, 1);
+    disk_read((BYTE*)buffer, address_of_chain + index_of_sector, 1);
 
-
-    return buffer[index_of_adress_in_sector];
+    return buffer[index_of_address_in_sector];
 
 }
 
-void set_adress_of_cluster_in_chain(uint32_t cluster_with_chain, uint16_t index_of_adress, uint32_t value)
+void set_address_of_cluster_in_chain(const uint32_t address_of_chain, const uint16_t index_of_address, const uint32_t value)
 {
-    uint16_t index_of_sector = index_of_adress/128;
-    uint16_t index_of_adress_in_sector = index_of_adress%128;
+    uint16_t index_of_sector = index_of_address/128;
+    uint16_t index_of_address_in_sector = index_of_address%128;
 
     uint32_t buffer [128];
 
-    disk_read((BYTE*)buffer, cluster_with_chain + index_of_sector, 1);
+    disk_read((BYTE*)buffer, address_of_chain + index_of_sector, 1);
 
 
-    buffer [index_of_adress_in_sector] = value;
+    buffer [index_of_address_in_sector] = value;
 
-    disk_read((BYTE*)buffer, cluster_with_chain + index_of_sector, 1);
+    disk_read((BYTE*)buffer, address_of_chain + index_of_sector, 1);
 }
 
 void set_record_name_plus_ext(record *rec, const uchar *name_plus_ext) {
@@ -265,7 +276,7 @@ void set_record_name_plus_ext(record *rec, const uchar *name_plus_ext) {
     }
 }
 
-char *get_name_plus_ext(record* rec)
+const char *get_name_plus_ext(const record* rec)
 {
     size_t name_len = 0;
 
@@ -304,7 +315,7 @@ char *get_name_plus_ext(record* rec)
     return buffer;
 }
 
-char *get_extension(record *rec)
+const char *get_extension(const record *rec)
 {
     static char extension[17]; //16 chars max and \0
     
@@ -316,6 +327,18 @@ char *get_extension(record *rec)
         }
         extension[i] = rec->extension[i];
     }
-
+    
     return extension;
+}
+
+void ls()
+{
+    for (size_t i = 0; i < working_dir.rec.index_of_available_record; i++)
+    {
+        record* rec_out = {0};
+        get_record_by_index(rec_out, working_dir.rec.address_of_chain, i);
+        
+        kprint_str(get_name_plus_ext(rec_out));
+        kprint_newline();
+    }   
 }

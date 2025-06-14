@@ -5,3 +5,5 @@ tmp/
 *.img
 
 .vscode/
+
+debug.sh

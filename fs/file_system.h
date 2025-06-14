@@ -9,9 +9,11 @@ int fs_init();
 int detect_fs();
 
 int mkfs();
-int mkfile(const char* name_plus_ext);
 
-char *get_name_plus_ext(record* rec);
-char *get_extension(record *rec);
+const char *get_name_plus_ext(const record* rec);
+const char *get_extension(const record *rec);
+
+int mkfile(const char* name_plus_ext);
+void ls();
 
 extern Working_dir working_dir;
