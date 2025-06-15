@@ -109,20 +109,16 @@ int mkfile(const char* name_plus_ext)
     set_address_of_cluster_in_chain(rec.address_of_chain, 0, start_cluster);
     set_cluster_status(start_cluster, 1);
 
-    set_record_by_index(&rec, working_dir.rec.address_of_chain, working_dir.rec.index_of_available_record);
     working_dir.rec.index_of_available_record++;
+    set_record_by_index(&rec, working_dir.rec.address_of_chain, working_dir.rec.index_of_available_record);
 
     if (strcmp(get_extension(&working_dir.rec), "dir") == 0)
     {
-        mkdir(&rec, start_cluster);
+        set_record_by_index(&rec, start_cluster, 0);
+        set_record_by_index(&working_dir.rec, start_cluster, 1);
+        
     }
     return 0; //success
-}
-
-int mkdir (const record *rec, const uint32_t adress_of_chain_start)
-{
-    set_record_by_index(rec, adress_of_chain_start, 0);
-    return 0;
 }
 
 int clear_cluster(uint32_t address_of_cluster)
@@ -130,9 +126,7 @@ int clear_cluster(uint32_t address_of_cluster)
     BYTE zeros [512] = {0};
     uint32_t start_sector = (address_of_cluster) * CLUSTER_SIZE;
 
-    for (int i = 0; i < CLUSTER_SIZE; i++)
-    {
-        
+    for (int i = 0; i < CLUSTER_SIZE; i++){
         disk_write(zeros, start_sector + i, 1);
     }
 
@@ -341,4 +335,22 @@ void ls()
         kprint_str(get_name_plus_ext(rec_out));
         kprint_newline();
     }   
+}
+
+int cd(const char* dir_name)
+{
+    record* rec_buff;
+
+    for(size_t i = 0; i < working_dir.rec.index_of_available_record; i++)
+    {
+        get_record_by_index(rec_buff, working_dir.rec.address_of_chain, i);
+     
+        if(strcmp(get_name_plus_ext(rec_buff), dir_name) == 0)
+        {
+            working_dir.rec = *rec_buff;
+            return 0; //success
+        }
+    }
+
+    return 1; //error, unknown dir
 }

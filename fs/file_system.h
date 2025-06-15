@@ -15,5 +15,6 @@ const char *get_extension(const record *rec);
 
 int mkfile(const char* name_plus_ext);
 void ls();
+int cd(const char* dir_name);
 
 extern Working_dir working_dir;
