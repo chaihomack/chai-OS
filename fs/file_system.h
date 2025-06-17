@@ -13,8 +13,8 @@ int mkfs();
 const char *get_name_plus_ext(const record* rec);
 const char *get_extension(const record *rec);
 
-int mkfile(const char* name_plus_ext);
-void ls();
-int cd(const char* dir_name);
+int makefile(const char* name_plus_ext);
+void list();
+int change_dir(const char* dir_name);
 
 extern Working_dir working_dir;

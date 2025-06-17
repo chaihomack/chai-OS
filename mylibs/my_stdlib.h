@@ -13,15 +13,14 @@ typedef uint32_t    size_t;
 #define NULL ((void*)0)
 #endif
 
-void kprint_char(const uchar character);
-void kprint_str(const uchar *str);
+void kprint_char(const char character);
+void kprint_str(const char *str);
 void kprint_int(const int32_t num);
 int ipow(int base, int exponent); //will be in mathlib later
-char* kstrchr(const char* str, int ch);
 
 void kprint_newline();
 char kgetc();
-void kscanf (uchar* str, const uint32_t* buffer_size);
+void kscanf (char* str, const uint32_t* buffer_size);
 
 int is_bit_set(BYTE byte, int bit);
 BYTE toggle_bit(BYTE byte, int bit);

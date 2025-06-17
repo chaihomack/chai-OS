@@ -25,8 +25,8 @@ typedef struct __attribute__((__packed__)) {
 
 typedef struct 
 {
-    uint32_t address;
     record rec;
+    record rec_abt_prev;
 } Working_dir;
 
 typedef struct __attribute__((__packed__)){

@@ -6,13 +6,13 @@
 extern char *vidptr;
 extern struct Cursor cursor;
 
-void kprint_char(const uchar character)
+void kprint_char(const char character)
 {
     vidptr[cursor.loc++] = character;
     vidptr[cursor.loc++] = 0x07;
 }
 
-void kprint_str(const uchar *str)
+void kprint_str(const char *str)
 {
 	unsigned int i = 0;
 	while (str[i] != '\0') {
@@ -49,7 +49,7 @@ void kprint_int(const int32_t num)
         cpy_of_num *= -1;        
     }
 
-    uchar nums[10] = {"0123456789"};
+    char nums[10] = {"0123456789"};
 
     if(num == 0) {kprint_char('0'); return; }        //костылирование ;)
 
@@ -88,9 +88,9 @@ char kgetc()
     return *char_buffer;
 }
 
-void kscanf (uchar* str, const uint32_t* buffer_size)
+void kscanf (char* str, const uint32_t* buffer_size)
 {
-    uchar tmp_char;
+    char tmp_char;
     for (int i = 0; i < *buffer_size-1; i++)
     {
         tmp_char = kgetc();

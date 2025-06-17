@@ -20,7 +20,6 @@ void get_record_by_index(record* rec_out, const uint32_t address_of_chain, const
 uint32_t get_address_of_cluster_in_chain(const uint32_t address_of_chain, const uint16_t index_of_address);
 void set_address_of_cluster_in_chain(const uint32_t address_of_chain, const uint16_t index_of_address, const uint32_t value);
 uint32_t get_free_cluster();
-int mkdir (const record *rec, const uint32_t address_of_chain_start);
 
 int fs_init()
 {
@@ -96,9 +95,9 @@ int detect_fs()
     return 1; //no fs
 }
 
-int mkfile(const char* name_plus_ext)
+int makefile(const char* name_plus_ext)
 {
-    record rec = {0};
+    record rec;
     set_record_name_plus_ext(&rec, name_plus_ext);
 
     uint32_t free_cluster = get_free_cluster();
@@ -109,15 +108,18 @@ int mkfile(const char* name_plus_ext)
     set_address_of_cluster_in_chain(rec.address_of_chain, 0, start_cluster);
     set_cluster_status(start_cluster, 1);
 
-    working_dir.rec.index_of_available_record++;
     set_record_by_index(&rec, working_dir.rec.address_of_chain, working_dir.rec.index_of_available_record);
+    working_dir.rec.index_of_available_record++;
 
     if (strcmp(get_extension(&working_dir.rec), "dir") == 0)
     {
+        rec.index_of_available_record = 2;
         set_record_by_index(&rec, start_cluster, 0);
         set_record_by_index(&working_dir.rec, start_cluster, 1);
         
     }
+
+    set_record_by_index(&working_dir.rec, working_dir.rec.address_of_chain, 0); //reload index_of_available_record
     return 0; //success
 }
 
@@ -175,6 +177,7 @@ const uint32_t get_free_cluster()
             {
                 if(is_bit_set(buffer[B], b) == 0){
                     free_cluster = B*8 + b;    
+                    return free_cluster;
                 }
             }
                 
@@ -184,7 +187,6 @@ const uint32_t get_free_cluster()
 
     return 1; //error
 }
-//imlosingmyself
 
 void set_record_by_index(const record *rec_in, const uint32_t address_of_chain, const uint8_t index)
 {
@@ -200,7 +202,7 @@ void set_record_by_index(const record *rec_in, const uint32_t address_of_chain, 
     uint8_t rec_pos_in_sector = rec_index_in_cluster%2;
     memcpy(sec_with_record + rec_pos_in_sector * sizeof(record), rec_in, sizeof(record));
     
-    disk_write(sec_with_record, cluster_address + sec_index, 1);        
+    disk_write(sec_with_record, (cluster_address*CLUSTER_SIZE) + sec_index, 1);        
 }
 
 void get_record_by_index(record* rec_out, const uint32_t address_of_chain, const uint32_t index)
@@ -225,7 +227,7 @@ const uint32_t get_address_of_cluster_in_chain(const uint32_t address_of_chain, 
 
     uint32_t buffer [128];
 
-    disk_read((BYTE*)buffer, address_of_chain + index_of_sector, 1);
+    disk_read((BYTE*)buffer, (address_of_chain*CLUSTER_SIZE) + index_of_sector, 1);
 
     return buffer[index_of_address_in_sector];
 
@@ -238,12 +240,12 @@ void set_address_of_cluster_in_chain(const uint32_t address_of_chain, const uint
 
     uint32_t buffer [128];
 
-    disk_read((BYTE*)buffer, address_of_chain + index_of_sector, 1);
+    disk_read((BYTE*)buffer, (address_of_chain*CLUSTER_SIZE) + index_of_sector, 1);
 
 
     buffer [index_of_address_in_sector] = value;
 
-    disk_read((BYTE*)buffer, address_of_chain + index_of_sector, 1);
+    disk_write((BYTE*)buffer, (address_of_chain*CLUSTER_SIZE) + index_of_sector, 1);
 }
 
 void set_record_name_plus_ext(record *rec, const uchar *name_plus_ext) {
@@ -273,41 +275,35 @@ void set_record_name_plus_ext(record *rec, const uchar *name_plus_ext) {
 const char *get_name_plus_ext(const record* rec)
 {
     size_t name_len = 0;
-
-    while(sizeof rec->name && rec->name[name_len] != 0){            //to fist 0 ,,,, no null terminators :)
+    while (name_len < sizeof(rec->name) && rec->name[name_len] != 0)
         name_len++;
-    }
 
     size_t ext_len = 0;
-
-    while(sizeof rec->extension && rec->extension[ext_len] != 0){   //to fist 0 ,,,, no null terminators :)
+    while (ext_len < sizeof(rec->extension) && rec->extension[ext_len] != 0)
         ext_len++;
-    }
 
     size_t name_ext_len = name_len + (ext_len ? 1 + ext_len : 0) + 1;
 
-    static uchar buffer [48];      //32 for name and 16 for extension    
-    
-    if(name_ext_len > sizeof buffer)
-    {
-        buffer[0] = '\0';    //hueta
-        return buffer;
+    static uchar buffer[48];
+
+    if (name_ext_len > sizeof(buffer)) {
+        buffer[0] = '\0';
+        return (char*)buffer;
     }
 
     memcpy(buffer, rec->name, name_len);
 
-
-    if(ext_len)         
-    {
+    if (ext_len) {
         buffer[name_len] = '.';
         memcpy(buffer + name_len + 1, rec->extension, ext_len);
         buffer[name_ext_len - 1] = '\0';
-    }else{
+    } else {
         buffer[name_len] = '\0';
     }
 
-    return buffer;
+    return (char*)buffer;
 }
+
 
 const char *get_extension(const record *rec)
 {
@@ -325,29 +321,77 @@ const char *get_extension(const record *rec)
     return extension;
 }
 
-void ls()
+void copy_record(record* rec_out, const record* rec_in)
 {
-    for (size_t i = 0; i < working_dir.rec.index_of_available_record; i++)
+    for(int i = 0; i < 32; i++)     //32 chars for name
     {
-        record* rec_out = {0};
-        get_record_by_index(rec_out, working_dir.rec.address_of_chain, i);
+        rec_out->name[i] = rec_in->name[i];
+    }
+
+    for(int i = 0; i < 16; i++)     //16 chars for extension
+    {
+        rec_out->extension[i] = rec_in->extension[i];
+    }
+
+    rec_out->address_of_chain = rec_in->address_of_chain;
+    rec_out->index_of_available_record = rec_in->index_of_available_record;
+
+    for (int i = 0; i < 200; i++)
+    {
+        rec_out->additional_data_for_future[i] = rec_in->additional_data_for_future[i];
+    }
+}
+
+void list()
+{
+    size_t i = 0;
+    kprint_str("."); //this dir
+    kprint_newline();                                   //kpint_newline's will be fixed soon
+    i++;
+    
+    if(working_dir.rec.address_of_chain != fs_params.data_zone_start+1){ //predictable
+        kprint_str("..");   //prev dir
+        kprint_newline();
+        i++;
+    }
+
+    for (; i < working_dir.rec.index_of_available_record; i++)
+    {
+        record rec_out = {0};
+        get_record_by_index(&rec_out, working_dir.rec.address_of_chain, i);
         
-        kprint_str(get_name_plus_ext(rec_out));
+        kprint_str(get_name_plus_ext(&rec_out));
         kprint_newline();
     }   
 }
 
-int cd(const char* dir_name)
+int change_dir(const char* dir_name)
 {
-    record* rec_buff;
+    if (!dir_name) return 2;
+
+    record rec_buff;
+
+    if(strcmp(dir_name, ".") == 0){
+        return 0;   //lol
+    }
+
+    if(strcmp(dir_name, "..") == 0 && working_dir.rec.address_of_chain != fs_params.data_zone_start+1){
+        copy_record(&working_dir.rec, &working_dir.rec_abt_prev);
+        get_record_by_index(&working_dir.rec_abt_prev, working_dir.rec.address_of_chain, 1);    //index 1 is abt prev dir
+        return 0;
+    }
 
     for(size_t i = 0; i < working_dir.rec.index_of_available_record; i++)
     {
-        get_record_by_index(rec_buff, working_dir.rec.address_of_chain, i);
-     
-        if(strcmp(get_name_plus_ext(rec_buff), dir_name) == 0)
+        get_record_by_index(&rec_buff, working_dir.rec.address_of_chain, i);
+
+        if(strcmp(get_name_plus_ext(&rec_buff), dir_name) == 0)
         {
-            working_dir.rec = *rec_buff;
+            if (strcmp(get_extension(&rec_buff), "dir") != 0){
+                return 2; // not dir!
+            }
+            copy_record(&working_dir.rec_abt_prev, &working_dir.rec);
+            copy_record(&working_dir.rec, &rec_buff);
             return 0; //success
         }
     }

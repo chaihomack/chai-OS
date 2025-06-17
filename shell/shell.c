@@ -14,14 +14,18 @@ void start_shell()
 
     const uint32_t size_of_command = 512;
 
+
     while (1)
     {
         kprint_newline();
-        uchar command[size_of_command];
+        char command[size_of_command];
+        memset(command, 0, size_of_command);
+
         kprint_str(prompt.pwd);
         kprint_str(prompt.text_af_pwd);
         
         kscanf(command, &size_of_command);
+
         kprint_newline();
         do_command(command);
     }
@@ -38,5 +42,24 @@ void add_dir_in_prompt(const uchar* dir_name)
     {
         prompt.pwd[i] = dir_name[i - pwd_len];  
     }
-    prompt.pwd[total_len] = '\0';
+    prompt.pwd[total_len] = '/';
+    prompt.pwd[total_len+1] = '\0';
+}
+
+void increment_dir_in_prompt()
+{
+    size_t pwd_len = strlen(prompt.pwd);
+
+    prompt.pwd[pwd_len--] = 0;          //rming \0
+    prompt.pwd[pwd_len--] = 0;          //rming '/', its last char
+    for (size_t i = pwd_len; i >= 0; i--)
+    {
+        if(prompt.pwd[i] == '/'){
+            return;
+        }
+        prompt.pwd[i] = 0;
+        pwd_len--;
+    }
+
+    prompt.pwd[pwd_len] = '\0';
 }

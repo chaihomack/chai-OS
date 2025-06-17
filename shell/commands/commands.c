@@ -24,15 +24,18 @@ struct command_list {
 
 void clear();
 void go_fs();
-void makefile();
+void mkfile();
+void cd();
 
 int parse_args(const char* input, char args[MAX_ARGS][MAX_ARG_LEN]);   //forward declaration
+void clear_params();
 
 struct command_list commands[] = {
-    { "ls", ls },
+    { "ls", list },
     { "clear", clear },
     { "gofs", go_fs },
-    { "makefile", makefile },
+    { "mkfile", mkfile },
+    { "cd", cd},
     { NULL, NULL }  
 };
 
@@ -54,8 +57,22 @@ void do_command(const char* input_command)
     parse_args(input_command, cmd.parameters);
 
     call_command(cmd.parameters[0]);             // call command using first parameter
+
+    clear_params();
 }
 
+void clear_params()
+{
+    for (size_t i = 0; i < MAX_ARGS; i++)
+    {
+        for (size_t j = 0; j < MAX_ARG_LEN; j++)
+        {
+            cmd.parameters[i][j] = 0;
+        }
+        
+    }
+    
+}
 
 int parse_args(const char* input_command, char args[MAX_ARGS][MAX_ARG_LEN]) {
     int arg_i = 0;     // which argument rn
@@ -118,7 +135,28 @@ void go_fs()        //tmp command, will be removed soon
     add_dir_in_prompt(get_name_plus_ext(&working_dir.rec));
 }
 
-void makefile()
+void mkfile()
 {
-    mkfile(cmd.parameters[1]);
+    makefile(cmd.parameters[1]);
+}
+
+void cd()
+{
+    int res = change_dir(cmd.parameters[1]); 
+    if(res == 1){
+        kprint_str("unknown dir");
+        return;
+    }
+    if(res == 2){
+        kprint_str("not a dir");
+        return;
+    }
+    if (strcmp(cmd.parameters[1], "..") == 0){
+        increment_dir_in_prompt();
+        return;
+    }
+
+    if(strcmp(cmd.parameters[1], ".") != 0){
+        add_dir_in_prompt(get_name_plus_ext(&working_dir.rec));
+    }
 }
