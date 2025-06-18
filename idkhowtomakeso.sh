@@ -3,15 +3,16 @@ mkdir tmp
 echo "nasm -f elf32 kernel.asm -o tmp/kasm.o"
 nasm -f elf32 kernel.asm -o tmp/kasm.o
 
+CFLAGS="-m32 -c -fno-stack-protector"
 echo "compiling..."
-gcc -m32 -c -fno-stack-protector kernel.c -o tmp/kernel.o
-gcc -m32 -c -fno-stack-protector drivers/keyboard/keyboard_driver.c -o tmp/keyboard_driver.o
-gcc -m32 -c -fno-stack-protector drivers/disk_driver/disk_driver.c -o tmp/disk_driver.o
-gcc -m32 -c -fno-stack-protector mylibs/my_stdlib.c -o tmp/my_stdlib.o
-gcc -m32 -c -fno-stack-protector shell/shell.c -o tmp/shell.o
-gcc -m32 -c -fno-stack-protector shell/commands/commands.c -o tmp/commands.o
-gcc -m32 -c -fno-stack-protector fs/file_system.c -o tmp/file_system.o
-gcc -m32 -c -fno-stack-protector fs/diskio.c -o tmp/diskio.o
+gcc $CFLAGS kernel.c -o tmp/kernel.o
+gcc $CFLAFS drivers/keyboard/keyboard_driver.c -o tmp/keyboard_driver.o
+gcc $CFLAGS drivers/disk_driver/disk_driver.c -o tmp/disk_driver.o
+gcc $CFLAGS mylibs/my_stdlib.c -o tmp/my_stdlib.o
+gcc $CFLAGS shell/shell.c -o tmp/shell.o
+gcc $CFLAGS shell/commands/commands.c -o tmp/commands.o
+gcc $CFLAGS protector fs/file_system.c -o tmp/file_system.o
+gcc $CFLAGS fs/diskio.c -o tmp/diskio.o
 
 echo "linking..."
 ld -m elf_i386 -T link.ld -o tmp/kernel \
@@ -25,12 +26,10 @@ tmp/commands.o \
 tmp/file_system.o \
 tmp/diskio.o
 
-echo "dd if=/dev/zero of=disk.img bs=1M count=100"
+echo "creating disk"
 dd if=/dev/zero of=disk.img bs=1M count=100
 
-echo "qemu-system-i386 \
--kernel tmp/kernel \
--drive file=disk.img,format=raw,if=ide,index=0,media=disk "
+echo "starting emulator"
 qemu-system-i386 \
 -kernel tmp/kernel \
 -drive file=disk.img,format=raw,if=ide,index=0,media=disk
