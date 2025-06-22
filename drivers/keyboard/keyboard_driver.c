@@ -2,8 +2,6 @@
 #include "keyboard_map.h"
 #include "keyboard_driver.h"
 
-
-
 struct IDT_entry IDT[IDT_SIZE];
 
 volatile char *vidptr = (char*)0xb8000;

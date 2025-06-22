@@ -5,7 +5,7 @@ nasm -f elf32 kernel.asm -o tmp/kasm.o
 
 CFLAGS="-m32 -c -fno-stack-protector"
 gcc $CFLAGS kernel.c -o tmp/kernel.o
-gcc $CFLAFS drivers/keyboard/keyboard_driver.c -o tmp/keyboard_driver.o
+gcc $CFLAGS drivers/keyboard/keyboard_driver.c -o tmp/keyboard_driver.o
 gcc $CFLAGS drivers/disk_driver/disk_driver.c -o tmp/disk_driver.o
 gcc $CFLAGS mylibs/my_stdlib.c -o tmp/my_stdlib.o
 gcc $CFLAGS shell/shell.c -o tmp/shell.o
