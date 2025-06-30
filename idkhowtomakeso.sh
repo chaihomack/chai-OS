@@ -7,6 +7,7 @@ CFLAGS="-m32 -c -fno-stack-protector"
 gcc $CFLAGS kernel.c -o tmp/kernel.o
 gcc $CFLAGS drivers/keyboard/keyboard_driver.c -o tmp/keyboard_driver.o
 gcc $CFLAGS drivers/disk_driver/disk_driver.c -o tmp/disk_driver.o
+nasm -f elf32 drivers/disk_driver/io_asm.S -o tmp/io_asm.o
 gcc $CFLAGS mylibs/my_stdlib.c -o tmp/my_stdlib.o
 gcc $CFLAGS shell/shell.c -o tmp/shell.o
 gcc $CFLAGS shell/commands/commands.c -o tmp/commands.o
@@ -19,6 +20,7 @@ tmp/kasm.o \
 tmp/kernel.o \
 tmp/keyboard_driver.o \
 tmp/disk_driver.o \
+tmp/io_asm.o \
 tmp/shell.o \
 tmp/my_stdlib.o \
 tmp/commands.o \

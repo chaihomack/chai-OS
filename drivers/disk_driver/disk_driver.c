@@ -17,7 +17,6 @@
 #define DRIVE_MASTER_LBA 0xE0
 #define DRIVE_SLAVE_LBA  0xF0
 
-
 #define BSY   0x80
 #define DRQ   0x08
 #define ERR   0x01
@@ -27,48 +26,10 @@
 #define WRITE_COMMAND       0x30
 #define FLUSH_COMMAND       0xE7
 
-BYTE inb(WORD port)
-{
-    BYTE result;
-    __asm__ volatile (
-        "inb %1, %0" 
-        : "=a" (result)    
-        : "Nd" (port)      
-    );
-    return result;
-}
-
-
-void outb(WORD port, BYTE data)
-{
-    __asm__ volatile (
-        "outb %0, %1"
-        :                  
-        : "a" (data),      
-          "Nd" (port)      
-    );
-}
-
-WORD inw(WORD port)
-{
-    unsigned short result;
-    __asm__ volatile (
-        "inw %1, %0"
-        : "=a" (result)    
-        : "Nd" (port)      
-    );
-    return result;
-}
-
-void outw(WORD port, WORD data)
-{
-    __asm__ volatile (
-        "outw %0, %1"
-        :
-        : "a" (data),      
-          "Nd" (port)      
-    );
-}
+extern BYTE inb(WORD port);
+extern void outb(WORD port, BYTE data);
+extern WORD inw(WORD port);
+extern void outw(WORD port, WORD data);
 
 int wait_BSY_off()
 {
