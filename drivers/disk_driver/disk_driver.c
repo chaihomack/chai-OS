@@ -134,9 +134,10 @@ int ATA_disk_read(BYTE *buff, uint32_t sector, uint32_t count)
     int rc = wait_BSY_off_DRQ_on();
     if (rc) return rc;
     
-    for (int i = 0; i < 512 * count; i++)
-        buff[i] = inb(DATA);
-    
+    WORD *wbuff = (WORD*) buff;
+    for (int i = 0; i < 256 * count; i++) 
+        wbuff[i] = inw(DATA);  
+        
     return 0; 
 }
 
@@ -153,9 +154,9 @@ int ATA_disk_write(const BYTE *buff, uint32_t sector, uint32_t count)
 
     outb(COMMAND, WRITE_COMMAND);  // write command
 
-    for (uint32_t i = 0; i < 512 * count; i++) {
-        outb(DATA, buff[i]);
-    }
+    const WORD *wbuff = (const WORD*) buff;
+    for (uint32_t i = 0; i < 256 * count; i++)
+        outw(DATA, wbuff[i]);
 
     int rc = wait_BSY_off();
     if (rc) return rc;
