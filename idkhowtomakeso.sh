@@ -1,38 +1,59 @@
+CFLAGS="-m32 -c -fno-stack-protector -ffreestanding -fno-pie -no-pie"
+
 mkdir tmp
 
-echo "compiling..."
-nasm -f elf32 kernel.asm -o tmp/kasm.o
+echo "making bootloader..."
+nasm -f bin   boot/bootloader.S                   -o tmp/bootloader.bin
+nasm -f elf32 boot/boot_sec_stage.S               -o tmp/boot_sec_stage.o
+nasm -f elf32 asm/io_asm.S                        -o tmp/io_asm.o
 
-CFLAGS="-m32 -c -fno-stack-protector"
-gcc $CFLAGS kernel.c -o tmp/kernel.o
-gcc $CFLAGS drivers/keyboard/keyboard_driver.c -o tmp/keyboard_driver.o
-gcc $CFLAGS drivers/disk_driver/disk_driver.c -o tmp/disk_driver.o
-nasm -f elf32 drivers/disk_driver/io_asm.S -o tmp/io_asm.o
-gcc $CFLAGS mylibs/my_stdlib.c -o tmp/my_stdlib.o
-gcc $CFLAGS shell/shell.c -o tmp/shell.o
-gcc $CFLAGS shell/commands/commands.c -o tmp/commands.o
-gcc $CFLAGS fs/file_system.c -o tmp/file_system.o
-gcc $CFLAGS fs/diskio.c -o tmp/diskio.o
+gcc $CFLAGS boot/boot_sec_stage.c -o tmp/boot_sec_stagec.o
 
-echo "linking..."
-ld -m elf_i386 -T link.ld -o tmp/kernel \
+ld -m elf_i386 -T boot/bLink.ld --oformat binary -o tmp/boot_sec_stage.bin \
+tmp/boot_sec_stage.o \
+tmp/boot_sec_stagec.o \
+tmp/io_asm.o
+
+
+echo "making kernel..."
+nasm -f elf32 kernel.S                          -o tmp/kasm.o
+#nasm -f elf32 asm/io_asm.S                      -o tmp/io_asm.o we have this from bootloader
+nasm -f elf32 asm/write_read_port_asm.S         -o tmp/write_read_port_asm.o
+
+gcc $CFLAGS kernel.c                            -o tmp/kernel.o
+gcc $CFLAGS drivers/keyboard/keyboard_driver.c  -o tmp/keyboard_driver.o
+gcc $CFLAGS drivers/disk_driver/disk_driver.c   -o tmp/disk_driver.o
+gcc $CFLAGS mylibs/my_stdlib.c                  -o tmp/my_stdlib.o
+gcc $CFLAGS shell/shell.c                       -o tmp/shell.o
+gcc $CFLAGS shell/commands/commands.c           -o tmp/commands.o
+gcc $CFLAGS fs/file_system.c                    -o tmp/file_system.o
+gcc $CFLAGS fs/diskio.c                         -o tmp/diskio.o
+
+ld -m elf_i386 -T kLink.ld --oformat binary -o tmp/kernel.bin \
 tmp/kasm.o \
+tmp/io_asm.o \
+tmp/write_read_port_asm.o \
 tmp/kernel.o \
 tmp/keyboard_driver.o \
 tmp/disk_driver.o \
-tmp/io_asm.o \
 tmp/shell.o \
 tmp/my_stdlib.o \
 tmp/commands.o \
 tmp/file_system.o \
 tmp/diskio.o
 
-echo "creating disk"
-dd if=/dev/zero of=disk.img bs=1M count=100
+
+BOOTLOADER_SEC_STAGE_SIZE=$(stat -c%s tmp/boot_sec_stage.bin)
+KERNEL_START_OFFSET=$((1 + 1 + ((BOOTLOADER_SEC_STAGE_SIZE/512)) ))
+
+dd if=/dev/zero of=disk.img bs=512 count=$((20*1024)) status=none
+
+dd if=tmp/bootloader.bin        of=disk.img bs=512 count=1 conv=notrunc seek=0                    status=none
+dd if=tmp/boot_sec_stage.bin    of=disk.img bs=512         conv=notrunc seek=1                    status=none
+dd if=tmp/kernel.bin            of=disk.img bs=512         conv=notrunc seek=$KERNEL_START_OFFSET status=none
 
 echo "starting emulator"
 qemu-system-i386 \
--kernel tmp/kernel \
 -drive file=disk.img,format=raw,if=ide,index=0,media=disk
 
 echo "rming tmp"

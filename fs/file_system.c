@@ -21,6 +21,8 @@ uint32_t get_address_of_cluster_in_chain(const uint32_t address_of_chain, const 
 void set_address_of_cluster_in_chain(const uint32_t address_of_chain, const uint16_t index_of_address, const uint32_t value);
 uint32_t get_free_cluster();
 
+
+extern uint32_t free_space_after_kernel_index;
 int fs_init()
 {
     disk_init();
@@ -51,7 +53,7 @@ int mkfs()
     uint64_t magic = 0xC4A1C4A1C4A1C4A1;    //8B magic
     BYTE buffer[512] = {0};
     memcpy(buffer, &magic, sizeof(magic));
-    disk_write(buffer, 0, 1);  //will be fixed when I make a bootloader
+    disk_write(buffer, free_space_after_kernel_index, 1);  //will be fixed when I make a bootloader
     
     for (uint32_t i = 0; i < fs_params.data_zone_start; i++){
         set_cluster_status(i, 1);
@@ -59,7 +61,7 @@ int mkfs()
     
     //---------------------------------
     //making root dir
-    
+    memset(&working_dir, 0, sizeof working_dir);
     memcpy(working_dir.rec.name, "root", 4);       // witout \0
     memcpy(working_dir.rec.extension, "dir", 3);   // without \0
     working_dir.rec.address_of_chain = fs_params.data_zone_start + 1;
@@ -83,8 +85,7 @@ int detect_fs()
 {
     BYTE buffer[512];
     
-    //magic number is on sector 0 //will be fixed when I make a bootloader!!!
-    disk_read(buffer, 0, 1);        
+    disk_read(buffer, free_space_after_kernel_index, 1);        
     
     //first 8 bytes of magic
     if (*((uint64_t*)buffer) == 0xC4A1C4A1C4A1C4A1)  

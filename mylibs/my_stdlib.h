@@ -1,17 +1,8 @@
 #pragma once
 
 #include <stdint.h>
+#include "my_stdtypes.h"
 #include "../drivers/keyboard/keyboard_driver.h"
-
-typedef unsigned char   BYTE;
-typedef unsigned char   uchar;
-typedef unsigned short  WORD;
-typedef uint32_t    DWORD;
-typedef uint32_t    size_t;
-
-#ifndef NULL
-#define NULL ((void*)0)
-#endif
 
 void kprint_char(const char character);
 void kprint_str(const char *str);
