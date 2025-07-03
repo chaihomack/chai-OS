@@ -48,15 +48,10 @@ init_pm:
     mov ss, ax
     mov ebp, 0x90000
     mov esp, ebp
-
-    mov edi, 0xB8000    ; vid pointer
-    mov al, 'H'         
-    mov ah, 0x0F        ; white on black
-    mov [edi], ax       ; load to vid memory 
     
     jmp 0x9000
     cli
-    hlt                                  ;;;;stop
+    hlt
 
 gdt_start:
     gdt_null:
