@@ -8,5 +8,5 @@ SECTIONS
    .data : { *(.data) }
    .bss  : { *(.bss)  }
 
-    . = ALIGN(512);     /* 4 bytes for magic 0x1BADB002 */
+    . = ALIGN(512);
  }
