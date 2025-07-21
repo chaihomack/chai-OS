@@ -4,11 +4,11 @@
 #include "commands/commands.h"
 
 typedef struct{
-    uchar pwd[512];
-    uchar text_af_pwd[8];
+    char pwd[512];
+    char text_af_pwd[8];
 }Prompt;
 
 void start_shell();
 
-void add_dir_in_prompt(const uchar* dir_name);
+void add_dir_in_prompt(const char* dir_name);
 void increment_dir_in_prompt();

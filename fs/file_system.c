@@ -1,6 +1,6 @@
 #include "file_system.h"
 
-#include "diskio.h"
+#include "fs_api.h"
 #include "../mylibs/my_stdlib.h"
 #include <stdbool.h>
 #include "fs_structures.h"
@@ -13,7 +13,7 @@ FS_params fs_params = {.is_initialized = 0};
 Working_dir working_dir = {0};
 
 int set_cluster_status(uint32_t cluster_index, const  bool value);                    //forward dec
-void set_record_name_plus_ext(record *rec, const uchar *name_plus_ext);
+void set_record_name_plus_ext(record *rec, const char *name_plus_ext);
 int clear_cluster(const uint32_t address_of_cluster);
 void set_record_by_index(const record *rec_in, const uint32_t address_of_chain, const uint8_t index);
 void get_record_by_index(record* rec_out, const uint32_t address_of_chain, const uint32_t index);
@@ -22,9 +22,11 @@ void set_address_of_cluster_in_chain(const uint32_t address_of_chain, const uint
 uint32_t get_free_cluster();
 
 
-extern uint32_t free_space_after_kernel_index;
+uint32_t fs_start_index;
 int fs_init()
 {
+    fs_start_index = get_fs_start_index();
+
     disk_init();
  
     disk_params.sector_count = get_sector_count();
@@ -53,7 +55,7 @@ int mkfs()
     uint64_t magic = 0xC4A1C4A1C4A1C4A1;    //8B magic
     BYTE buffer[512] = {0};
     memcpy(buffer, &magic, sizeof(magic));
-    disk_write(buffer, free_space_after_kernel_index, 1);  //will be fixed when I make a bootloader
+    disk_write(buffer, fs_start_index, 1);  //will be fixed when I make a bootloader
     
     for (uint32_t i = 0; i < fs_params.data_zone_start; i++){
         set_cluster_status(i, 1);
@@ -85,7 +87,7 @@ int detect_fs()
 {
     BYTE buffer[512];
     
-    disk_read(buffer, free_space_after_kernel_index, 1);        
+    disk_read(buffer, fs_start_index, 1);        
     
     //first 8 bytes of magic
     if (*((uint64_t*)buffer) == 0xC4A1C4A1C4A1C4A1)  
@@ -249,9 +251,9 @@ void set_address_of_cluster_in_chain(const uint32_t address_of_chain, const uint
     disk_write((BYTE*)buffer, (address_of_chain*CLUSTER_SIZE) + index_of_sector, 1);
 }
 
-void set_record_name_plus_ext(record *rec, const uchar *name_plus_ext) {
+void set_record_name_plus_ext(record *rec, const char *name_plus_ext) {
     //finding a dot
-    const uchar *dot = (const uchar *)strchr((const uchar*)name_plus_ext, '.');
+    const char *dot = (const char *)strchr((const char*)name_plus_ext, '.');
     size_t name_len = dot ? (size_t)(dot - name_plus_ext) : strlen((const char*)name_plus_ext);
     if (name_len > sizeof rec->name) 
         name_len = sizeof rec->name;
@@ -285,7 +287,7 @@ const char *get_name_plus_ext(const record* rec)
 
     size_t name_ext_len = name_len + (ext_len ? 1 + ext_len : 0) + 1;
 
-    static uchar buffer[48];
+    static char buffer[48];
 
     if (name_ext_len > sizeof(buffer)) {
         buffer[0] = '\0';

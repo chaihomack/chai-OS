@@ -20,7 +20,7 @@ SECTIONS
       *(COMMON)
   }
 
-  . = ALIGN(512) - 4;     /* 4 bytes for magic 0xDEADBEEF */
+  . = ALIGN(4096) - 4;     /* 4 bytes for magic 0xDEADBEEF */
 
   .footer : {
       LONG(0xDEADBEEF)    /* signature for kernel end idedntification */

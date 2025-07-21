@@ -32,7 +32,7 @@ void start_shell()
        
 }
 
-void add_dir_in_prompt(const uchar* dir_name)
+void add_dir_in_prompt(const char* dir_name)
 {
     size_t pwd_len = strlen(prompt.pwd);
     size_t name_len = strlen(dir_name);
