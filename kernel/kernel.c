@@ -21,18 +21,16 @@ uint32_t get_free_space_after_kernel_index()
 }
 
 uint32_t* get_address_after_kernel(){
-    for (BYTE* i = (BYTE*)KERNEL_ADDRESS_START; (uint32_t)i < 99999999; i += 4096)
+    for (uint32_t* i = (uint32_t*)KERNEL_ADDRESS_START; (uint32_t)i < 99999999; i += 1024)
     {
-        if (*(uint32_t*)(i + 4092) == 0xDEADBEEF) {
-            return (uint32_t*)(i += 4096);
+        if (*(i + 1023) == 0xDEADBEEF) {
+            return (i + 1024);
         }
     }
-    return 0; // error, cant find end
+    return NULL; // error, cant find end
 }
 
-void* kmalloc(uint16_t bytes_to_alloc);
-
-extern void mmu_setup(uint32_t* pdt_ptr);
+extern void mmu_setup(void* pdt_ptr);
 
 void kmain() 
 {
@@ -41,13 +39,19 @@ void kmain()
     
     clear_screen();
 
-    void *pdt_ptr = create_pdt(create_pt(0));
-    int *yo = kmalloc(4096);
-    int *nya = kmalloc(4096);
+    void *pdt_ptr = map_full_memory_pdt();
+
+    mmu_setup(pdt_ptr);
+    kprint_str("MMU setup done");
+    kprint_int((uint32_t)get_address_after_kernel());
+    
+    kprint_newline();
+    int *yo = kmalloc(32);
+    int *nya = kmalloc(32);
     kprint_int((int32_t)yo);
     kprint_newline();
     kprint_int((int32_t)nya);
-    
+    kprint_newline();
     *yo = 123;
     *nya = 2;
     kprint_int(*yo + *nya);

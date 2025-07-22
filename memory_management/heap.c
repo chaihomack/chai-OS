@@ -5,6 +5,8 @@
 
 extern uint32_t* get_address_after_kernel();
 
+void NewFunction();
+
 int find_free_bit_and_turn_on(BYTE *bitmap_block_index, uint32_t from, uint32_t to);
 
 #define RECS_PER_BITMAP 263173
@@ -36,6 +38,9 @@ void* kmalloc(uint16_t bytes_to_alloc) {
         uint16_t chunk_size = 1 << aligned_to_power_of_two;
 
         uint32_t *current_rec_ptr = get_address_after_kernel();
+        if(current_rec_ptr == NULL) {
+                return NULL; // error, cant find end
+        }
                                        
         for (int i = 0; i < RECS_PER_BITMAP; i++) {
                 int free_bit = find_free_bit_and_turn_on(bitmap_for_kmalloc[i], start_bit, end_bit);

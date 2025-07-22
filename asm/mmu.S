@@ -1,5 +1,7 @@
 bits 32
 
+global mmu_setup
+
 mmu_setup:
     mov edx, [esp + 4]  ; first arg, address of pdt
     

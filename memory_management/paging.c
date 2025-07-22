@@ -11,6 +11,27 @@ extern void mmu_setup(uint32_t* pdt_ptr);
 #define FRAME_SIZE PAGE_SIZE
 #define ENTRIES_PER_TABLE 1024
 
+void* map_full_memory_pdt()
+{
+        void *pdt = kmalloc(PAGE_SIZE);
+        clear_page(pdt);
+        
+        page_record *pde = (page_record*)pdt;
+        
+        //1024 entries per pdt
+
+        uint32_t mem_iterator = 0;
+        for (size_t i = 0; i < 1024; i++,  mem_iterator += FRAME_SIZE * 1024)       
+        {
+                void *pt_ptr = create_pt(mem_iterator);
+                pde[i].present = 1;
+                pde[i].rw = 1;
+                pde[i].user_access = 0;
+                pde[i].phys_addr = ((uint32_t)pt_ptr) >> 12;
+        }
+        return pdt;
+}
+
 void* create_pdt(page_record *first_pt)
 {
         void *pdt = kmalloc(PAGE_SIZE);
