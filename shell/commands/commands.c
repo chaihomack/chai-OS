@@ -3,6 +3,7 @@
 #include "../../mylibs/my_stdlib.h"
 #include "../../fs/file_system.h"
 #include "../shell.h"
+#include "../../mylibs/kernelio.h"
 
 #define MAX_ARGS 10
 #define MAX_ARG_LEN 64
@@ -26,11 +27,13 @@ void clear();
 void go_fs();
 void mkfile();
 void cd();
+void echo();
 
 int parse_args(const char* input, char args[MAX_ARGS][MAX_ARG_LEN]);   //forward declaration
 void clear_params();
 
 struct command_list commands[] = {
+    { "echo", echo},
     { "ls", list },
     { "clear", clear },
     { "gofs", go_fs },
@@ -112,7 +115,7 @@ extern struct Cursor cursor;
 void clear()
 {
     clear_screen();
-    cursor.loc = 0;
+    set_cursor_pos(0);
 }
 
 void go_fs()        //tmp command, will be removed soon
@@ -142,21 +145,26 @@ void mkfile()
 
 void cd()
 {
-    int res = change_dir(cmd.parameters[1]); 
-    if(res == 1){
-        kprint_str("unknown dir");
-        return;
-    }
-    if(res == 2){
-        kprint_str("not a dir");
-        return;
-    }
-    if (strcmp(cmd.parameters[1], "..") == 0){
-        increment_dir_in_prompt();
-        return;
-    }
+        int res = change_dir(cmd.parameters[1]); 
+        if(res == 1){
+                kprint_str("unknown dir");
+                return;
+        }
+        if(res == 2){
+                kprint_str("not a dir");
+                return;
+        }
+        if (strcmp(cmd.parameters[1], "..") == 0){
+                increment_dir_in_prompt();
+                return;
+        }
 
-    if(strcmp(cmd.parameters[1], ".") != 0){
-        add_dir_in_prompt(get_name_plus_ext(&working_dir.rec));
-    }
+        if(strcmp(cmd.parameters[1], ".") != 0){
+                add_dir_in_prompt(get_name_plus_ext(&working_dir.rec));
+        }
+}
+
+void echo()
+{
+        kprint_str(cmd.parameters[1]);
 }

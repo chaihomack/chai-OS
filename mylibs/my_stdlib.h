@@ -5,14 +5,7 @@
 #include "my_stdtypes.h"
 #include "../drivers/keyboard/keyboard_driver.h"
 
-void kprint_char(const char character);
-void kprint_str(const char *str);
-void kprint_int(const int32_t num);
-int ipow(int base, int exponent); //will be in mathlib later
-
-void kprint_newline();
-char kgetc();
-void kscanf (char* str, const uint32_t* buffer_size);
+int ipow(int base, int exponent);
 
 int is_bit_set(BYTE byte, int bit);
 BYTE toggle_bit(BYTE byte, int bit);

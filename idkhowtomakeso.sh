@@ -25,6 +25,7 @@ gcc $CFLAGS kernel/kernel.c                     -o tmp/kernel.o
 gcc $CFLAGS drivers/keyboard/keyboard_driver.c  -o tmp/keyboard_driver.o
 gcc $CFLAGS drivers/disk_driver/disk_driver.c   -o tmp/disk_driver.o
 gcc $CFLAGS mylibs/my_stdlib.c                  -o tmp/my_stdlib.o
+gcc $CFLAGS mylibs/kernelio.c                   -o tmp/kernelio.o
 gcc $CFLAGS shell/shell.c                       -o tmp/shell.o
 gcc $CFLAGS shell/commands/commands.c           -o tmp/commands.o
 gcc $CFLAGS fs/file_system.c                    -o tmp/file_system.o
@@ -42,6 +43,7 @@ tmp/keyboard_driver.o \
 tmp/disk_driver.o \
 tmp/shell.o \
 tmp/my_stdlib.o \
+tmp/kernelio.o \
 tmp/commands.o \
 tmp/file_system.o \
 tmp/fs_api.o \

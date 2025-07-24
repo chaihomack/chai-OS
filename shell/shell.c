@@ -1,6 +1,8 @@
 
 #include "shell.h"
 #include "../drivers/keyboard/keyboard_driver.h"
+#include "../mylibs/my_stdlib.h"
+#include "../mylibs/kernelio.h"
 
 Prompt prompt = 
 {
@@ -24,7 +26,7 @@ void start_shell()
         kprint_str(prompt.pwd);
         kprint_str(prompt.text_af_pwd);
         
-        kscanf(command, &size_of_command);
+        kscanf(command, size_of_command);
 
         kprint_newline();
         do_command(command);

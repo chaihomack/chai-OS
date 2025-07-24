@@ -4,6 +4,7 @@
 #include "../mylibs/my_stdlib.h"
 #include "../memory_management/heap.h"
 #include "../memory_management/paging.h"
+#include "../shell/shell.h"
 
 #define KERNEL_ADDRESS_START 0x100000
 
@@ -36,25 +37,10 @@ void kmain()
 {
     idt_init();
     kb_init();
-    
-    clear_screen();
 
     void *pdt_ptr = map_full_memory_pdt();
 
     mmu_setup(pdt_ptr);
-    kprint_str("MMU setup done");
-    kprint_int((uint32_t)get_address_after_kernel());
     
-    kprint_newline();
-    int *yo = kmalloc(32);
-    int *nya = kmalloc(32);
-    kprint_int((int32_t)yo);
-    kprint_newline();
-    kprint_int((int32_t)nya);
-    kprint_newline();
-    *yo = 123;
-    *nya = 2;
-    kprint_int(*yo + *nya);
+    start_shell();
 }
-
-

@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include "fs_structures.h"
 #include "stdint.h"
+#include "../mylibs/kernelio.h"
 
 #define CLUSTER_SIZE 8 //in sectors
 

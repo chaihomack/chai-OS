@@ -4,21 +4,6 @@
 
 struct IDT_entry IDT[IDT_SIZE];
 
-volatile char *vidptr = (char*)0xb8000;
-
-volatile struct Cursor cursor =
-{
-    .loc = 0
-};
-
-void refresh_cursor() {
-	write_port(0x3D4, 0x0F); 
-	write_port(0x3D5, (unsigned int)((cursor.loc/2) & 0xFF));
-	
-	write_port(0x3D4, 0x0E); 
-	write_port(0x3D5, (unsigned int)(((cursor.loc/2) >> 8) & 0xFF));
-}
-
 void idt_init()
 {
 	unsigned long keyboard_address;
@@ -99,22 +84,13 @@ void keyboard_handler_main()
 			*char_buffer = '\n';
 			return;
 		}
+		if(keycode == BACKSPACE_KEY_CODE) {
+			*char_buffer = '\b';
+			return;
+		}
 
 		*char_buffer = keyboard_map[(unsigned char) keycode];
 
-		vidptr[cursor.loc++] = keyboard_map[(unsigned char) keycode];
-		vidptr[cursor.loc++] = 0x07;
-
-        refresh_cursor();
 	}
     
-}
-
-void clear_screen()
-{
-	unsigned int i = 0;
-	while (i < SCREENSIZE) {
-		vidptr[i++] = ' ';
-		vidptr[i++] = 0x07;
-	}
 }

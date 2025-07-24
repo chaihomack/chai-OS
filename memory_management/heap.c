@@ -3,9 +3,7 @@
 #include<stdint.h>
 #include"../mylibs/my_stdtypes.h"
 
-extern uint32_t* get_address_after_kernel();
-
-void NewFunction();
+extern uint32_t *get_address_after_kernel();
 
 int find_free_bit_and_turn_on(BYTE *bitmap_block_index, uint32_t from, uint32_t to);
 
