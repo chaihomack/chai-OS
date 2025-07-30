@@ -5,20 +5,21 @@
 #include "../memory_management/heap.h"
 #include "../memory_management/paging.h"
 #include "../shell/shell.h"
+#include "../mylibs/kernelio.h"
 
 #define KERNEL_ADDRESS_START 0x100000
 
-uint32_t get_free_space_after_kernel_index()
+uint32_t get_index_after_kernel_from_disk()
 {
-    BYTE buffer[512];
+    BYTE buffer[512] = {0};
     for (size_t i = 0; i < 99999999; i++)
-        {
-            ATA_disk_read(buffer, i, 1);
-            if(*(uint32_t*)(buffer + 508) == 0xDEADBEEF){
-                return i + 1;
-            }
+    {
+        ATA_disk_read(buffer, i, 1);
+        if(*(uint32_t*)(buffer + 508) == 0xDEADBEEF){
+            return i + 1;
         }
-        return 0; // no signature
+    }
+    return 0; // error, cant find end
 }
 
 uint32_t* get_address_after_kernel(){
@@ -37,10 +38,10 @@ void kmain()
 {
     idt_init();
     kb_init();
-
-    void *pdt_ptr = map_full_memory_pdt();
-
-    mmu_setup(pdt_ptr);
     
+    // void *pdt_ptr = map_full_memory_pdt();
+
+    // mmu_setup(pdt_ptr);
+
     start_shell();
 }

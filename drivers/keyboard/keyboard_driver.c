@@ -1,8 +1,13 @@
 
 #include "keyboard_map.h"
 #include "keyboard_driver.h"
+#include "key_codes.h"
+#include "stdint.h"
 
 struct IDT_entry IDT[IDT_SIZE];
+volatile char char_buffer = 0;
+volatile uint8_t scan_code = 0;
+volatile uint8_t key_status[256] = {0};
 
 void idt_init()
 {
@@ -25,8 +30,8 @@ void idt_init()
 	*/
 
 	/* ICW1 - begin initialization */
-	write_port(0x20 , 0x11);
-	write_port(0xA0 , 0x11);
+	write_port(0x20, 0x11);
+    	write_port(0xA0, 0x11);
 
 	/* ICW2 - remap offset address of IDT */
 	/*
@@ -50,9 +55,9 @@ void idt_init()
 	write_port(0xA1 , 0xff);
 
 	/* fill the IDT descriptor */
-	idt_address = (unsigned long)IDT ;
-	idt_ptr[0] = (sizeof (struct IDT_entry) * IDT_SIZE) + ((idt_address & 0xffff) << 16);
-	idt_ptr[1] = idt_address >> 16 ;
+	idt_address = (unsigned long)IDT;
+    	idt_ptr[0] = (sizeof(struct IDT_entry) * IDT_SIZE) + ((idt_address & 0xffff) << 16);
+    	idt_ptr[1] = idt_address >> 16;
 
 	load_idt(idt_ptr);
 }
@@ -63,34 +68,76 @@ void kb_init()
 	write_port(0x21 , 0xFD);
 }
 
-volatile char *char_buffer = 0;
+uint8_t is_key_pressed(uint8_t scancode)
+{
+    if(scancode >= 128)
+        return 0;
+    return key_status[scancode];
+}
 
+
+char translate_char_to_char_WITH_SHIFT(char character);
 void keyboard_handler_main()
 {
-	unsigned char status;
-	char keycode;
+    unsigned char status;
+    uint16_t keycode;
 
-	/* write EOI */
-	write_port(0x20, 0x20);
+    /* write EOI */
+    write_port(0x20, 0x20);
 
-	status = read_port(KEYBOARD_STATUS_PORT);
-	/* Lowest bit of status will be set if buffer is not empty */
-	if (status & 0x01) {
-		keycode = read_port(KEYBOARD_DATA_PORT);
-		if(keycode < 0)
-			return;
+    status = read_port(KEYBOARD_STATUS_PORT);
+    if (status & 0x01) {
+        keycode = read_port(KEYBOARD_DATA_PORT);
 
-		if(keycode == ENTER_KEY_CODE) {
-			*char_buffer = '\n';
-			return;
+        uint8_t is_pressed = !(keycode & 0x80);
+        uint8_t raw_keycode = keycode & 0x7F;
+
+        key_status[raw_keycode] = is_pressed;
+
+        if (is_pressed) {
+		if (raw_keycode == ENTER_KEY_CODE) {
+			char_buffer = '\n';
 		}
-		if(keycode == BACKSPACE_KEY_CODE) {
-			*char_buffer = '\b';
-			return;
+		if (raw_keycode == BACKSPACE_KEY_CODE) {
+			char_buffer = '\b';
 		}
+		if (is_key_pressed(SHIFT_KEY_CODE)) {
+			char_buffer = translate_char_to_char_WITH_SHIFT(keyboard_map[raw_keycode]);
+		} else {
+			char_buffer = keyboard_map[raw_keycode];
+		}	
+		scan_code = raw_keycode;
+            }
+        }
+}
 
-		*char_buffer = keyboard_map[(unsigned char) keycode];
-
+char translate_char_to_char_WITH_SHIFT(char character)
+{
+	if(character >= 'a' && character <= 'z') {
+		return character - 32;
 	}
-    
+	switch(character) {
+		case '1': return '!';
+		case '2': return '@';
+		case '3': return '#';
+		case '4': return '$';
+		case '5': return '%';
+		case '6': return '^';
+		case '7': return '&';
+		case '8': return '*';
+		case '9': return '(';
+		case '0': return ')';
+		case '-': return '_';
+		case '=': return '+';
+		case '[': return '{';
+		case ']': return '}';
+		case '\\': return '|';
+		case ';': return ':';
+		case '\'': return '"';
+		case ',': return '<';
+		case '.': return '>';
+		case '/': return '?';
+		case '`': return '~';
+		default: break;
+	}
 }

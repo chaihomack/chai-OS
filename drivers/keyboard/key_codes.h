@@ -1,0 +1,11 @@
+#pragma once
+
+#define ENTER_KEY_CODE 0x1C
+#define CTRL_KEY_CODE 0x1D
+#define SHIFT_KEY_CODE 0x2A
+#define BACKSPACE_KEY_CODE 0x0E
+
+#define ARROW_UP_KEY_CODE    0x48
+#define ARROW_DOWN_KEY_CODE  0x50
+#define ARROW_LEFT_KEY_CODE  0x4B
+#define ARROW_RIGHT_KEY_CODE 0x4D

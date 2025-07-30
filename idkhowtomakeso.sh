@@ -28,6 +28,8 @@ gcc $CFLAGS mylibs/my_stdlib.c                  -o tmp/my_stdlib.o
 gcc $CFLAGS mylibs/kernelio.c                   -o tmp/kernelio.o
 gcc $CFLAGS shell/shell.c                       -o tmp/shell.o
 gcc $CFLAGS shell/commands/commands.c           -o tmp/commands.o
+gcc $CFLAGS shell/textr/textr.c                 -o tmp/textr.o
+gcc $CFLAGS shell/textr/load_write_file.c       -o tmp/load_write_file.o
 gcc $CFLAGS fs/file_system.c                    -o tmp/file_system.o
 gcc $CFLAGS fs/fs_api.c                         -o tmp/fs_api.o
 gcc $CFLAGS memory_management/heap.c            -o tmp/heap.o
@@ -42,9 +44,11 @@ tmp/kernel.o \
 tmp/keyboard_driver.o \
 tmp/disk_driver.o \
 tmp/shell.o \
+tmp/commands.o \
+tmp/textr.o \
+tmp/load_write_file.o \
 tmp/my_stdlib.o \
 tmp/kernelio.o \
-tmp/commands.o \
 tmp/file_system.o \
 tmp/fs_api.o \
 tmp/heap.o \
@@ -54,7 +58,7 @@ tmp/paging.o
 BOOTLOADER_SEC_STAGE_SIZE=$(stat -c%s tmp/boot_sec_stage.bin)
 KERNEL_START_OFFSET=$((1 + 1 + (( (BOOTLOADER_SEC_STAGE_SIZE + 511) / 512 ))))
 
-dd if=/dev/zero of=disk.img bs=512 count=$((20*1024)) status=none
+dd if=/dev/zero of=disk.img bs=1M count=100
 
 dd if=tmp/bootloader.bin        of=disk.img bs=512 count=1 conv=notrunc seek=0                    status=none
 dd if=tmp/boot_sec_stage.bin    of=disk.img bs=512         conv=notrunc seek=1                    status=none

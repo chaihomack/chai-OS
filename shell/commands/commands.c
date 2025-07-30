@@ -4,6 +4,7 @@
 #include "../../fs/file_system.h"
 #include "../shell.h"
 #include "../../mylibs/kernelio.h"
+#include "../textr/textr.h"
 
 #define MAX_ARGS 10
 #define MAX_ARG_LEN 64
@@ -28,17 +29,22 @@ void go_fs();
 void mkfile();
 void cd();
 void echo();
-
+void ReadFile();
+void WriteInFile();
+void textr();
 int parse_args(const char* input, char args[MAX_ARGS][MAX_ARG_LEN]);   //forward declaration
 void clear_params();
 
 struct command_list commands[] = {
+    { "readfile", ReadFile },
+    { "writeinfile", WriteInFile },
     { "echo", echo},
     { "ls", list },
     { "clear", clear },
     { "gofs", go_fs },
     { "mkfile", mkfile },
     { "cd", cd},
+    { "textr", textr},
     { NULL, NULL }  
 };
 
@@ -115,8 +121,10 @@ extern struct Cursor cursor;
 void clear()
 {
     clear_screen();
-    set_cursor_pos(0);
+    set_cursor_pos(0, 0);
 }
+
+extern Working_dir working_dir;
 
 void go_fs()        //tmp command, will be removed soon
 {
@@ -166,5 +174,28 @@ void cd()
 
 void echo()
 {
-        kprint_str(cmd.parameters[1]);
+    kprint_str(cmd.parameters[1]);
+}
+
+void WriteInFile()
+{
+    write_in_file(cmd.parameters[1], cmd.parameters[2], 512, 0); // just for testing
+    kprint_str("Data written to file");
+}
+
+void ReadFile()
+{
+    uint32_t size;
+    char* data = read_from_file(cmd.parameters[1], &size, 0);   // just for testing
+    if (data) {
+        kprint_str(data);
+        kprint_newline();
+    } else {
+        kprint_str("Error reading file");
+    }
+}
+
+void textr()
+{
+    textr_start(cmd.parameters[1]);
 }

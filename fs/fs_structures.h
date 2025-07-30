@@ -10,6 +10,7 @@ typedef struct
 
 typedef struct
 {   
+    uint32_t start_index;
     uint32_t table_size;            //the table_size is aligned by sector
     uint32_t data_zone_start;       //start of data aligned by cluster, after table
     bool is_initialized;
@@ -20,7 +21,8 @@ typedef struct __attribute__((__packed__)) {
     char extension[16];               // without '\0'
     uint32_t address_of_chain;
     uint32_t index_of_available_record;    //for dirs
-    BYTE additional_data_for_future[200];
+    uint32_t size;                    //in clusters
+    BYTE additional_data_for_future[196];
 } record;
 
 typedef struct 

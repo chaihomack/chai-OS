@@ -42,5 +42,5 @@ uint32_t get_sector_count()
 
 uint32_t get_fs_start_index()
 {
-    	return get_free_space_after_kernel_index();
+    	get_index_after_kernel_from_disk();
 }

@@ -1,13 +1,12 @@
 #pragma once
 
+#include <stdint.h>
+
 #define KEYBOARD_DATA_PORT 0x60
 #define KEYBOARD_STATUS_PORT 0x64
 #define IDT_SIZE 256
 #define INTERRUPT_GATE 0x8e
 #define KERNEL_CODE_SEGMENT_OFFSET 0x08
-
-#define ENTER_KEY_CODE 0x1C
-#define BACKSPACE_KEY_CODE 0x0E
 
 extern unsigned char keyboard_map[128];
 extern void keyboard_handler(void);
@@ -27,3 +26,4 @@ void idt_init();
 void kb_init();
 
 void keyboard_handler_main();
+uint8_t is_key_pressed(uint8_t scancode);
