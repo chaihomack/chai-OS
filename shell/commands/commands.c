@@ -179,14 +179,14 @@ void echo()
 
 void WriteInFile()
 {
-    write_in_file(cmd.parameters[1], cmd.parameters[2], 512, 0); // just for testing
+    write_in_file(cmd.parameters[1], cmd.parameters[2], MAX_ARG_LEN); // just for testing
     kprint_str("Data written to file");
 }
 
 void ReadFile()
 {
     uint32_t size;
-    char* data = read_from_file(cmd.parameters[1], &size, 0);   // just for testing
+    char* data = read_from_file(cmd.parameters[1], 0);   // just for testing
     if (data) {
         kprint_str(data);
         kprint_newline();

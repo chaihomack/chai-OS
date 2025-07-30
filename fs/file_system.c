@@ -7,7 +7,9 @@
 #include "stdint.h"
 #include "../mylibs/kernelio.h"
 
-#define CLUSTER_SIZE 8 //in sectors
+#define CLUSTER_SIZE_IN_SECTORS 8 //in sectors
+#define SECTOR_SIZE 512 //in bytes
+#define CLUSTER_SIZE_IN_BYTES 4096
 
 Disk_params disk_params;
 FS_params fs_params = {0};
@@ -130,9 +132,9 @@ int makefile(const char* name_plus_ext)
 int clear_cluster(uint32_t address_of_cluster)
 {
     BYTE zeros [512] = {0};
-    uint32_t start_sector = (address_of_cluster) * CLUSTER_SIZE;
+    uint32_t start_sector = (address_of_cluster) * CLUSTER_SIZE_IN_SECTORS;
 
-    for (int i = 0; i < CLUSTER_SIZE; i++){
+    for (int i = 0; i < CLUSTER_SIZE_IN_SECTORS; i++){
         disk_write(zeros, start_sector + i, 1);
     }
 
@@ -201,12 +203,12 @@ void set_record_by_index(const record *rec_in, const uint32_t address_of_chain, 
     uint32_t cluster_address = get_address_of_cluster_in_chain(address_of_chain, cluster_index);
 
     BYTE sec_with_record [512];
-    disk_read(sec_with_record, (cluster_address*CLUSTER_SIZE) + sec_index, 1);
+    disk_read(sec_with_record, (cluster_address*CLUSTER_SIZE_IN_SECTORS) + sec_index, 1);
 
     uint8_t rec_pos_in_sector = rec_index_in_cluster%2;
     memcpy(sec_with_record + rec_pos_in_sector * sizeof(record), rec_in, sizeof(record));
     
-    disk_write(sec_with_record, (cluster_address*CLUSTER_SIZE) + sec_index, 1);        
+    disk_write(sec_with_record, (cluster_address*CLUSTER_SIZE_IN_SECTORS) + sec_index, 1);        
 }
 
 void get_record_by_index(record* rec_out, const uint32_t address_of_chain, const uint32_t index)
@@ -218,7 +220,7 @@ void get_record_by_index(record* rec_out, const uint32_t address_of_chain, const
     uint32_t cluster_address = get_address_of_cluster_in_chain(address_of_chain, cluster_index);
 
     BYTE sec_with_record[512];
-    disk_read(sec_with_record, (cluster_address*CLUSTER_SIZE) + sec_index,1);
+    disk_read(sec_with_record, (cluster_address*CLUSTER_SIZE_IN_SECTORS) + sec_index,1);
 
     uint8_t rec_pos_in_sector = rec_index_in_cluster%2;
     memcpy (rec_out, sec_with_record + rec_pos_in_sector * sizeof(record), sizeof(record));
@@ -231,7 +233,7 @@ const uint32_t get_address_of_cluster_in_chain(const uint32_t address_of_chain, 
 
     uint32_t buffer [128];
 
-    disk_read((BYTE*)buffer, (address_of_chain*CLUSTER_SIZE) + index_of_sector, 1);
+    disk_read((BYTE*)buffer, (address_of_chain*CLUSTER_SIZE_IN_SECTORS) + index_of_sector, 1);
 
     return buffer[index_of_address_in_sector];
 
@@ -244,12 +246,44 @@ void set_address_of_cluster_in_chain(const uint32_t address_of_chain, const uint
 
     uint32_t buffer [128];
 
-    disk_read((BYTE*)buffer, (address_of_chain*CLUSTER_SIZE) + index_of_sector, 1);
+    disk_read((BYTE*)buffer, (address_of_chain*CLUSTER_SIZE_IN_SECTORS) + index_of_sector, 1);
 
 
     buffer [index_of_address_in_sector] = value;
 
-    disk_write((BYTE*)buffer, (address_of_chain*CLUSTER_SIZE) + index_of_sector, 1);
+    disk_write((BYTE*)buffer, (address_of_chain*CLUSTER_SIZE_IN_SECTORS) + index_of_sector, 1);
+}
+
+int add_new_cluster_to_chain(const uint32_t address_of_chain)
+{
+    uint32_t new_cluster = get_free_cluster();
+    if (new_cluster == 1) {
+        return 1; //error, no free clusters
+    }
+
+    set_cluster_status(new_cluster, 1);
+
+    uint32_t last_index = 0;
+    while (get_address_of_cluster_in_chain(address_of_chain, last_index) != 0) {
+        last_index++;
+    }
+
+    set_address_of_cluster_in_chain(address_of_chain, last_index, new_cluster);
+
+    return 0; //success
+}
+
+uint32_t get_cluster_count_in_chain(const uint32_t address_of_chain)
+{
+    uint32_t count = 0;
+    uint32_t index = 0;
+
+    while (get_address_of_cluster_in_chain(address_of_chain, index) != 0) {
+        count++;
+        index++;
+    }
+
+    return count;
 }
 
 void set_record_name_plus_ext(record *rec, const char *name_plus_ext) {
@@ -307,7 +341,6 @@ const char *get_name_plus_ext(const record* rec)
 
     return (char*)buffer;
 }
-
 
 const char *get_extension(const record *rec)
 {
@@ -385,39 +418,75 @@ int change_dir(const char* dir_name)
     return 1; //error, unknown dir
 }
 
-int write_in_file(const char* file_name, const BYTE* data, const uint32_t data_size, const uint32_t block_index_to_read)
+void write_data_in_cluster(const uint32_t cluster_index, BYTE* cluster_with_data)
 {
+    uint32_t sector_iterator = cluster_index * CLUSTER_SIZE_IN_SECTORS;
+    
+    for (size_t i = 0; i < CLUSTER_SIZE_IN_SECTORS; i++, sector_iterator++)
+    {
+        disk_write(cluster_with_data + i*512, sector_iterator, 1);
+    }
+}
+
+//data size in bytes
+int write_in_file(const char* file_name, const BYTE* data, const uint32_t data_size)
+{
+    BYTE *cluster_with_data_buffer = kmalloc(CLUSTER_SIZE_IN_BYTES);
     record rec_buff;
+    size_t data_size_in_clusters = (data_size + CLUSTER_SIZE_IN_BYTES - 1) / CLUSTER_SIZE_IN_BYTES;
+
     for (size_t i = 0; i < working_dir.rec.index_of_available_record; i++)
     {
         get_record_by_index(&rec_buff, working_dir.rec.address_of_chain, i);
         if (strcmp(get_name_plus_ext(&rec_buff), file_name) == 0)
         {
-            uint32_t cluster_to_read = get_address_of_cluster_in_chain(rec_buff.address_of_chain, block_index_to_read);
-            clear_cluster(cluster_to_read);
-
-            uint32_t written_bytes = 0;
-            uint32_t current_sector = cluster_to_read * CLUSTER_SIZE;
-
-            while (written_bytes < data_size)
-            {
-                uint32_t bytes_to_write = (data_size - written_bytes > 512) ? 512 : data_size - written_bytes;
-                disk_write((BYTE*)(data + written_bytes), current_sector, 1);
-                written_bytes += bytes_to_write;
-                current_sector++;
+            size_t current_f_size = (size_t)get_cluster_count_in_chain(rec_buff.address_of_chain);
+            while (current_f_size < data_size_in_clusters) {
+                add_new_cluster_to_chain(rec_buff.address_of_chain);
+                current_f_size = (size_t)get_cluster_count_in_chain(rec_buff.address_of_chain);
             }
+
+            for (size_t i = 0; i < data_size_in_clusters-1; i++)
+            {
+                uint32_t cluster_iterator = get_address_of_cluster_in_chain(rec_buff.address_of_chain, i);
+                memcpy(cluster_with_data_buffer, data + i*CLUSTER_SIZE_IN_BYTES, CLUSTER_SIZE_IN_BYTES);
+                write_data_in_cluster(cluster_iterator, cluster_with_data_buffer);
+                memset(cluster_with_data_buffer, 0, CLUSTER_SIZE_IN_BYTES);
+            }
+            size_t last_cluster_index = data_size_in_clusters - 1;
+            size_t last_chunk_size = data_size % CLUSTER_SIZE_IN_BYTES;
+            if (last_chunk_size == 0) last_chunk_size = CLUSTER_SIZE_IN_BYTES;
+
+            memcpy(cluster_with_data_buffer, data + last_cluster_index * CLUSTER_SIZE_IN_BYTES, last_chunk_size);
+            uint32_t end_cluster_index = get_address_of_cluster_in_chain(rec_buff.address_of_chain, last_cluster_index);
+            write_data_in_cluster(end_cluster_index, cluster_with_data_buffer);
+
+            // kfree(cluster_with_data_buffer);
             return 0; //success
         }
     }
     return 1; //error, this file does not exist
 }
 
-char* read_from_file(const char* file_name, uint32_t* out_size, const uint32_t block_index_to_read)
+void read_data_from_cluster(uint32_t cluster_index, BYTE* out_buffer)
 {
+    uint32_t sector_iterator = cluster_index * CLUSTER_SIZE_IN_SECTORS;
+
+    for (size_t i = 0; i < CLUSTER_SIZE_IN_SECTORS; i++, sector_iterator++)
+    {
+        disk_read(out_buffer + i * SECTOR_SIZE, sector_iterator, 1);
+    }
+}
+
+//output size is 4096 (1 cluster)
+BYTE* read_from_file(const char* file_name, const uint32_t block_index_to_read)
+{
+    BYTE *cluster_with_data_buffer = kmalloc(CLUSTER_SIZE_IN_BYTES);
+
     record rec_buff;
     set_record_name_plus_ext(&rec_buff, file_name);
     if(strcmp(get_extension(&rec_buff), "dir") == 0){
-        return NULL; //error, its a directory, not a file
+        return NULL; // error, it's a directory
     }
 
     for (size_t i = 0; i < working_dir.rec.index_of_available_record; i++)
@@ -425,24 +494,15 @@ char* read_from_file(const char* file_name, uint32_t* out_size, const uint32_t b
         get_record_by_index(&rec_buff, working_dir.rec.address_of_chain, i);
         if (strcmp(get_name_plus_ext(&rec_buff), file_name) == 0)
         {
-            uint32_t start_cluster = get_address_of_cluster_in_chain(rec_buff.address_of_chain, block_index_to_read);
-            uint32_t size = rec_buff.size * CLUSTER_SIZE; // size in bytes
-            char* buffer = kmalloc(size);
-            if (!buffer) return NULL; // allocation failed
+            uint32_t cluster_count = get_cluster_count_in_chain(rec_buff.address_of_chain);
+            if (block_index_to_read >= cluster_count)
+                return NULL; // error, out of bounds
 
-            uint32_t read_bytes = 0;
-            uint32_t current_sector = start_cluster * CLUSTER_SIZE;
+            uint32_t target_cluster = get_address_of_cluster_in_chain(rec_buff.address_of_chain, block_index_to_read);
 
-            while (read_bytes < size)
-            {
-                uint32_t bytes_to_read = (size - read_bytes > 512) ? 512 : size - read_bytes;
-                disk_read((BYTE*)(buffer + read_bytes), current_sector, 1);
-                read_bytes += bytes_to_read;
-                current_sector++;
-            }
+            read_data_from_cluster(target_cluster, (BYTE*)cluster_with_data_buffer);
 
-            *out_size = size;
-            return buffer; // success
+            return cluster_with_data_buffer; // return the data from the cluster
         }
     }
     return NULL; // error, file not found

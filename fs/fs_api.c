@@ -4,6 +4,7 @@
 #include "../mylibs/my_stdlib.h"
 #include "../drivers/disk_driver/disk_driver.h"
 #include "../kernel/kernel.h"
+#include "../memory_management/heap.h"
 
 BYTE disk_status()
 {
@@ -42,5 +43,10 @@ uint32_t get_sector_count()
 
 uint32_t get_fs_start_index()
 {
-    	get_index_after_kernel_from_disk();
+    	return get_index_after_kernel_from_disk();
+}
+
+void* calloc_api(uint16_t bytes_to_alloc)
+{
+	return kcalloc(bytes_to_alloc);
 }

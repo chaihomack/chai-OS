@@ -53,13 +53,14 @@ void* kmalloc(uint16_t bytes_to_alloc) {
         return NULL;
 }
 
-void *kcalloc(uint16_t bytes_to_alloc, uint8_t value)
+void *kcalloc(uint16_t bytes_to_alloc)
 {
         void *ptr = kmalloc(bytes_to_alloc);
 
         for(uint16_t i = 0; i < bytes_to_alloc; i++){
-                ((uint8_t*)(ptr))[i] = value;
+                ((uint8_t*)(ptr))[i] = 0;
         }
+
         return ptr;
 }
 

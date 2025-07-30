@@ -12,3 +12,4 @@ int disk_flush();
 WORD get_word_from_DISK_IDENTIFY(uint32_t word_number);
 uint32_t get_sector_count();
 uint32_t get_fs_start_index();
+void* calloc_api(uint16_t bytes_to_alloc);

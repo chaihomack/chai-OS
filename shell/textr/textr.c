@@ -23,7 +23,14 @@ void textr_start(const char *filename)
                 return;
         }
         textr_init();
-        load_file(filename, vid_memory);
+        int f_size = load_file(filename, &vid_memory);
+        if(f_size == 0) {
+                kprint_str("Error loading file: ");
+                kprint_str(filename);
+                kprint_newline();
+                return;
+        }
+        allocated_lines = f_size / COLUMNS_IN_LINE;
         textr_main(filename);
 }
 void textr_init()
@@ -34,23 +41,11 @@ void textr_init()
 
         clear_screen();
         set_cursor_pos(0, 0);
-
-        vid_memory = kcalloc(2048, 0);     //must be fine. in future it will be 1 block
-        if (vid_memory == NULL) {
-                kprint_str("Memory allocation failed");
-                kgetc();
-                return;
-        }
-
-        //lines*2 just for cool moving down and up
-        for (uint32_t i = 0; i < LINES*2; i++) {
-                vid_memory[i] = kcalloc(COLUMNS_IN_LINE * sizeof(char), 0);
-        }
-        allocated_lines = LINES-1;
 }
+
 void* create_new_line()
 {
-        vid_memory[allocated_lines++] = kcalloc(COLUMNS_IN_LINE * sizeof(char), 0);
+        vid_memory[allocated_lines++] = kcalloc(COLUMNS_IN_LINE * sizeof(char));
         return vid_memory[allocated_lines-1];
 }
 
@@ -263,6 +258,8 @@ void textr_main(const char *filename)
                         continue;
                 }
                 if(was_ctrl_pressed == 1 && char_in == 'x'){
+                        clear_screen();
+                        set_cursor_pos(0, 0);
                         return;
                 }
                 if(char_in >= 32 && char_in <= 126) {

@@ -21,7 +21,7 @@ typedef struct __attribute__((__packed__)) {
     char extension[16];               // without '\0'
     uint32_t address_of_chain;
     uint32_t index_of_available_record;    //for dirs
-    uint32_t size;                    //in clusters
+    uint32_t size;                         //in clusters
     BYTE additional_data_for_future[196];
 } record;
 
