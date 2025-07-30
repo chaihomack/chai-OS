@@ -99,6 +99,14 @@ void back_space()
         make_real_line(line_pos);
 }
 
+void print_char(char character);
+void tabulate()
+{
+        for (int i = 0; i < 4; i++) {
+                print_char(' ');
+        }
+}
+
 void clear_line(uint16_t line);
 
 //actually, we cant delete line in memory cuz i didnt make free func yet ;)
@@ -131,7 +139,6 @@ void make_real_line(uint16_t line) {
     while (j < COLUMNS_IN_LINE)
         vid_memory[line][j++] = 0;
 }
-
 
 //last symbol is '\n' everytime 
 uint16_t find_pos_of_last_symbol_in_line(uint16_t input_line_pos, uint16_t max_index)
@@ -272,6 +279,10 @@ void textr_main(const char *filename)
                 }
                 if(char_in == '\b') {
                         back_space();
+                        continue;
+                }
+                if(char_in == '\t') {
+                        tabulate();
                         continue;
                 }
 
