@@ -6,44 +6,24 @@
 #include "../kernel/kernel.h"
 #include "../memory_management/heap.h"
 
-BYTE disk_status()
-{
-    	return ATA_disk_status();
-}
-
 BYTE disk_init()
 {
     	return ATA_disk_init();
 }
 
-int disk_read(BYTE* buff, DWORD sector, DWORD count)
+int disk_read(BYTE* buff, uint32_t sector)
 {
-    	return ATA_disk_read(buff, sector, count);
+    	return ATA_disk_read(buff, sector, 1); //we dont use count cuz we are sigma 
 }
 
-int disk_write(const BYTE* buff, DWORD sector, DWORD count)
+int disk_write(const BYTE* buff, uint32_t sector)
 {
-    	return ATA_disk_write(buff, sector, count);
-}
-
-int disk_flush()
-{
-    	return ATA_disk_flush();
-}
-
-WORD get_word_from_DISK_IDENTIFY(uint32_t word_number)
-{
-    	return ATA_get_word_from_DISK_IDENTIFY(word_number);
+    	return ATA_disk_write(buff, sector, 1);
 }
 
 uint32_t get_sector_count()
 {
     	return ATA_get_sector_count();
-}
-
-uint32_t get_fs_start_index()
-{
-    	return get_index_after_kernel_from_disk();
 }
 
 void* calloc_api(uint16_t bytes_to_alloc)

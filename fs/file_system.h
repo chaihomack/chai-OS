@@ -1,14 +1,15 @@
 #pragma once
 
-#include "../mylibs/my_stdlib.h"
+#include "../mylibs/my_stdtypes.h"
 #include "stdint.h"
 #include <stdbool.h>
 #include "fs_structures.h"
+#include <string.h>
 
 int fs_init();
-int detect_fs();
+int32_t detect_fs();
 
-int mkfs();
+int mkfs(uint32_t fs_start_index);
 
 const char *get_name_plus_ext(const record* rec);
 const char *get_extension(const record *rec);

@@ -10,9 +10,9 @@ typedef struct
 
 typedef struct
 {   
-    uint32_t start_index;
-    uint32_t table_size;            //the table_size is aligned by sector
-    uint32_t data_zone_start;       //start of data aligned by cluster, after table
+    uint32_t start_sector_index; 
+    uint32_t table_size;            //the table_size is aligned by sector and it is in sectors
+    uint32_t data_zone_start;       //start of data aligned by cluster, after table and it is a cluster index
     bool is_initialized;
 }FS_params;
 
