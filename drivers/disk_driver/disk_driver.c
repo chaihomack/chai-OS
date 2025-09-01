@@ -2,6 +2,7 @@
 #include "disk_driver.h"
 #include "../../mylibs/my_stdlib.h"
 #include "stdint.h"
+#include "../asm/io_asm.h"
 
 #define DATA            0x1F0
 #define SECTOR_COUNT    0x1F2
@@ -17,8 +18,8 @@
 #define DRIVE_MASTER_LBA 0xE0
 #define DRIVE_SLAVE_LBA  0xF0
 
-#define BSY   0x80
-#define DRQ   0x08
+#define BSY   0x80  // busy
+#define DRQ   0x08  // data request
 #define ERR   0x01
 
 #define IDENTIFY_COMMAND    0xEC
@@ -26,34 +27,37 @@
 #define WRITE_COMMAND       0x30
 #define FLUSH_COMMAND       0xE7
 
-extern BYTE inb(WORD port);
-extern void outb(WORD port, BYTE data);
-extern WORD inw(WORD port);
-extern void outw(WORD port, WORD data);
+#define CHECK_ERR                       (inb(STATUS) & ERR)
+#define CHECK_DRQ                       (inb(STATUS) & DRQ)
+#define CHECK_BSY                       (inb(STATUS) & BSY)
+
+#define WAIT_BSY_OFF(timeout)           while (CHECK_BSY && --timeout)
+#define WAIT_DRQ_ON(timeout)            while (!CHECK_DRQ && --timeout)
+#define WAIT_BSY_OFF_DRQ_ON(timeout)    while (((inb(STATUS) & (BSY | DRQ)) != DRQ) && --timeout)
 
 int wait_BSY_off()
 {
     int timeout = 1000000;
-    while ((inb(STATUS) & BSY) && --timeout);          // waiting BSY=0
-    if(inb(STATUS) & ERR) return 1;
+    WAIT_BSY_OFF(timeout);
     if (timeout == 0) return -1;        //time out
+    if (CHECK_ERR) return 1;
     return 0;
 }
 
 int wait_DRQ_on()
 {
     int timeout = 1000000;
-    while (!(inb(STATUS) & DRQ) && --timeout);      // waiting DRQ=1
-    if(inb(STATUS) & ERR) return 1;
+    WAIT_DRQ_ON(timeout);
     if (timeout == 0) return -1;        //time out
+    if(CHECK_ERR) return 1;
     return 0;
 }
 
 int wait_BSY_off_DRQ_on()
 {
     int timeout = 1000000;
-    while (((inb(STATUS) & (BSY | DRQ)) != DRQ) && --timeout);   // wait for BSY=0 and DRQ=1
-    if(inb(STATUS) & ERR) return 1;
+    WAIT_BSY_OFF_DRQ_ON(timeout);
+    if(CHECK_ERR) return 1;
     if (timeout == 0) return -1;        //time out
     return 0;
 }
@@ -136,11 +140,11 @@ int ATA_disk_flush()
     while (--timeout) {
         BYTE status = inb(STATUS);
         
-        if (status & ERR) {
+        if (CHECK_ERR) {
             return -1;  
         }
         
-        if ((status & (STATUS | DRQ)) == 0) {
+        if (CHECK_DRQ == 0) {
             return 0;  
         }
         
